@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VN30F1M · Order Flow & Sổ lệnh</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1014;--panel:#11171d;--line:#253039;--text:#dce6eb;--muted:#82939f;--green:#69debb;--red:#ec8d92;--amber:#e8c779}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px system-ui,sans-serif}main{max-width:1900px;margin:auto;padding:24px}header,.toolbar,.panel-head,.summary,footer,.transport{display:flex;align-items:center;justify-content:space-between;gap:16px}header{margin-bottom:23px}h1{font-size:22px;letter-spacing:-.6px;margin:5px 0}h2{font-size:13px;margin:0}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--green)}.muted,small{color:var(--muted)}.badge{font-size:10px;letter-spacing:1px;border:1px solid #e8c77955;color:var(--amber);padding:6px 9px;border-radius:5px}.mono,strong,output{font-family:Consolas,monospace;font-variant-numeric:tabular-nums}.price{font-size:27px;color:var(--green)}.toolbar,.transport{padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);flex-wrap:wrap}.toolbar{justify-content:flex-start;margin-bottom:16px}label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}button,select{background:#1b252e;color:var(--text);border:1px solid #33424e;padding:8px 10px;border-radius:5px;cursor:pointer}button:hover{border-color:var(--green)}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--green);outline-offset:3px}button:disabled{opacity:.4;cursor:default}input{accent-color:var(--green)}.toolbar .spacer{flex:1}.terminal{display:grid;grid-template-columns:minmax(0,1fr) 420px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}.panel-head{height:49px;padding:0 16px;border-bottom:1px solid var(--line)}.panel-head small{font-size:10px}.dom-panel{border-left:1px solid var(--line)}.chart{height:clamp(420px,65vh,800px);position:relative;overflow:hidden}.chart canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}.summary{min-height:73px;padding:13px 16px;border-top:1px solid var(--line);font-size:11px;flex-wrap:wrap}.summary strong{display:block;margin-top:5px;font-size:15px}.up{color:var(--green)}.down{color:var(--red)}.dom-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px 16px;border-top:1px solid var(--line);font-size:11px}.dom-stats strong{display:block;margin-top:5px}.transport{margin-top:16px}.transport input[type=range]{flex:1;min-width:140px}.transport button:first-child{min-width:106px;color:var(--green)}footer{margin-top:14px;font-size:11px;line-height:1.7;flex-wrap:wrap}.hint{color:var(--muted);font-size:11px;margin:12px 0}.tooltip{position:fixed;z-index:10;pointer-events:none;background:#1b252e;border:1px solid #425361;padding:10px 13px;border-radius:6px;font:12px/1.8 Consolas,monospace;white-space:pre-line;box-shadow:0 6px 30px #0007}.hidden{display:none}
+@media(max-width:900px){main{padding:14px}.terminal{grid-template-columns:minmax(0,1fr) 370px}.panel-head{padding:0 10px}.panel-head small{display:none}}
+@media(max-width:620px){header{align-items:flex-start}h1{font-size:18px}.price{font-size:22px}.terminal{grid-template-columns:1fr}.dom-panel{border-left:0;border-top:1px solid var(--line)}.dom-panel .chart{height:480px}.toolbar{gap:10px}.chart{height:480px}.transport{gap:10px}.transport input[type=range]{order:2;flex-basis:100%}}
+
+.dom-book{overflow:auto;scrollbar-color:#425361 #11171d;scroll-behavior:auto}.book-table{width:100%;border-collapse:collapse;table-layout:fixed;font:11px Consolas,monospace}.book-table th{position:sticky;top:0;z-index:2;background:#19232b;color:#95a6b2;font-size:10px;height:28px;border-bottom:1px solid var(--line)}.book-table td{height:24px;text-align:center;border-bottom:1px solid #202a3280;padding:3px 2px}.book-table .price-cell{background:#172029;color:#b6c4cc}.book-table .historical .price-cell{color:#71818e}.book-table .peak{color:#899b91;font-size:10px}.book-table .peak-ask{color:#a48b90}.book-table .record{color:var(--amber);background:#e8c77914}.book-table .best-bid{background:#69debb16}.book-table .best-ask{background:#ec8d9216}.book-table .last-price-cell{outline:1px solid #e8c77988;color:var(--amber)}.book-table .live-bid{background:linear-gradient(to left,#69debb26 var(--depth),transparent var(--depth));color:var(--green)}.book-table .live-ask{background:linear-gradient(to right,#ec8d9226 var(--depth),transparent var(--depth));color:var(--red)}.dom-note{font:10px/1.6 system-ui,sans-serif;color:var(--muted);padding:9px 14px;border-top:1px solid var(--line)}
+button.live-button{color:var(--green);border-color:#69debb60;font-weight:650;letter-spacing:1px}button.live-button[aria-pressed="true"]{background:#69debb22;border-color:var(--green)}
+</style></head><body><main>
+<header><div><div class="eyebrow">VN30F1M TERMINAL</div><h1>Order Flow & Sổ lệnh</h1><small>DEMO-VN30-2610 · 13/10/2026 · UTC+7</small></div><div style="text-align:right"><span class="badge">LIVE · MÔ PHỎNG</span><div class="price mono" id="last-price" style="margin-top:9px">—</div></div></header>
+<div class="toolbar"><label>Nến <select id="timeframe"><option value="30">30s</option><option value="60" selected>1m</option><option value="180">3m</option><option value="300">5m</option><option value="900">15m</option></select></label><label>Cửa sổ <select id="window"><option value="300">5 phút</option><option value="600" selected>10 phút</option><option value="900">15 phút</option><option value="1800">30 phút</option></select></label><label><input type="checkbox" id="imbalance" checked> Imbalance</label><label><input type="checkbox" id="follow" checked> Theo giá</label><span class="spacer"></span><button id="zoom-in" aria-label="Phóng to trục giá">＋</button><button id="zoom-out" aria-label="Thu nhỏ trục giá">−</button><button id="center">Về giá hiện tại</button></div>
+<div class="terminal"><section><div class="panel-head"><h2>01 / ORDER FLOW</h2><small>SELL × BUY · tick 0,1 · POC viền vàng</small></div><div class="chart"><canvas id="footprint" aria-label="Biểu đồ Order Flow theo nến, SELL bên trái và BUY bên phải"></canvas></div><div class="summary"><div>BUY · NẾN CUỐI<strong class="up" id="bar-buy">—</strong></div><div>SELL · NẾN CUỐI<strong class="down" id="bar-sell">—</strong></div><div>DELTA<strong id="bar-delta">—</strong></div><div>UNKNOWN<strong id="bar-unknown">—</strong></div><div class="muted" id="range">—</div></div></section>
+<section class="dom-panel"><div class="panel-head"><h2>02 / SỔ LỆNH</h2><small id="book-state">10 BID × 10 ASK</small></div><div class="chart dom-book" id="dom-book" tabindex="0" aria-label="Sổ lệnh hiện tại và các mức giá lịch sử"><table class="book-table"><thead><tr><th>MAX BID</th><th>BID</th><th>GIÁ</th><th>ASK</th><th>MAX ASK</th></tr></thead><tbody id="book-rows"></tbody></table></div><div class="dom-stats"><div>BID DEPTH<strong class="up" id="bid-depth">—</strong></div><div>ASK DEPTH<strong class="down" id="ask-depth">—</strong></div><div>SPREAD<strong id="spread">—</strong></div><div>OBI 10<strong id="obi">—</strong></div><div>GIÁ CAO NHẤT ĐÃ GHI<strong id="history-high">—</strong></div><div>SỐ MỨC GIÁ ĐÃ GHI<strong id="history-count">—</strong></div><div>BID LỚN NHẤT (HĐ)<strong class="up" id="history-max-bid">—</strong></div><div>ASK LỚN NHẤT (HĐ)<strong class="down" id="history-max-ask">—</strong></div></div><div class="dom-note">MAX = khối lượng chờ cao nhất từng ghi nhận tại mức giá, từ 09:30 đến thời điểm đang xem. Rê chuột xem lần ghi nhận cuối và thời điểm đạt đỉnh. Dấu — = hiện chưa quan sát được; hàng giá cũ vẫn được giữ lại. Ô vàng = đỉnh khối lượng của mỗi phía.</div></section></div>
+<div class="transport"><button id="play">Tạm dừng</button><button id="step">+1 giây</button><output id="clock">—</output><input id="timeline" type="range" min="0" max="3600" value="3272" aria-label="Tua phiên mô phỏng"><label>Tốc độ <select id="speed"><option value="1">1×</option><option value="2">2×</option><option value="5">5×</option><option value="10">10×</option></select></label><button id="live" class="live-button" aria-pressed="false" title="Về dữ liệu cuối cùng và theo giá hiện tại">● LIVE</button><button id="restart">Về đầu phiên</button></div>
+<footer><span>Giá, khớp lệnh và sổ lệnh đều được mô phỏng. UNKNOWN là dữ liệu chưa xác định.</span><span class="mono" id="status" role="status">—</span></footer><p class="hint">Cuộn để zoom giá · kéo để dịch trục giá · rê chuột xem chi tiết · Space để phát / tạm dừng · LIVE về mới nhất, sinh dữ liệu mỗi giây. Tạm dừng chỉ dừng màn hình; nguồn mô phỏng vẫn chạy. Đoạn 10:22:35–10:22:53 mô phỏng mất Quote.</p>
+</main><div id="tooltip" class="tooltip hidden"></div><script>(()=>{'use strict';
+const $ = id => document.getElementById(id);
+const C = {bg:'#111519',grid:'#242c32',muted:'#77858e',text:'#c9d5da',buy:'#69debb',sell:'#ec8d92',amber:'#e8c779'};
+const BASE = Date.UTC(2026,9,13,2,30,0), LENGTH = 3601, LIVE_START = 3272, REFERENCE = 18638;
+const state = {cursor:LENGTH-1,running:true,live:true,mode:'demo',method:'flow',tf:60,bucket:1,window:600,follow:true,center:18655,rows:32,imbalance:true,bubbles:true,walls:true,poc:false,vwap:true,levels:true,volume:true,cvd:true,gap:true,relative:false,scale:'log',speed:1,ticketVisible:true,hover:null,drag:null};
+let seed = 17421;
+function random(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
+const frames=[];
+let lastPrice=REFERENCE, drift=0, cumBuy=0, cumSell=0, cumUnknown=0, totalTrades=0;
+function appendFrame(){
+  const i=frames.length;
+  const target=18642+Math.sin(i/260)*14+Math.sin(i/74)*6+(Math.min(i,LENGTH)/LENGTH)*12;
+  drift=drift*.72+(random()-.5)*.7+(target-lastPrice)*.09;
+  if(random()<.45)lastPrice+=Math.max(-2,Math.min(2,Math.round(drift)));
+  lastPrice=Math.max(18612,Math.min(18694,lastPrice));
+  const buysBias=.5+(target-lastPrice)*.028+Math.sin(i/83)*.12;
+  const trades=[];
+  const count=1+Math.floor(random()*3);
+  for(let t=0;t<count;t++){
+    const side=random()<.015?'UNKNOWN':random()<buysBias?'BUY':'SELL';
+    const q=random()<.035?30+Math.floor(random()*70):1+Math.floor(random()*10);
+    const p=lastPrice+(side==='BUY'?0:side==='SELL'?-1:0);
+    trades.push({price:p,qty:q,side,second:i});
+    if(side==='BUY')cumBuy+=q;else if(side==='SELL')cumSell+=q;else cumUnknown+=q;
+    totalTrades++;
+  }
+  const bids=[],asks=[],bestBid=lastPrice-1,bestAsk=lastPrice;
+  for(let n=0;n<10;n++){
+    const bp=bestBid-n,ap=bestAsk+n;
+    let bq=16+Math.floor(random()*65),aq=14+Math.floor(random()*70);
+    if(bp%17===0)bq+=260+Math.round(70*Math.sin(i/39));
+    if(ap%19===0)aq+=330+Math.round(110*Math.sin(i/65));
+    if(n===4&&Math.sin(i/180)>.4)bq+=120;
+    bids.push({price:bp,qty:bq});asks.push({price:ap,qty:aq});
+  }
+  frames.push({second:i,price:lastPrice,trades,bids,asks,buy:cumBuy,sell:cumSell,unknown:cumUnknown,volume:cumBuy+cumSell+cumUnknown,cvd:cumBuy-cumSell,tradeCount:totalTrades,gap:i>=3155&&i<3173});
+}
+for(let i=0;i<LENGTH;i++)appendFrame();
+const canvases=['footprint'];
+let current=null,dirty=true,renderDuration=0;
+const formatter=new Intl.NumberFormat('en-US');
+const fmt=n=>formatter.format(Math.round(n));
+const signed=n=>(n>0?'+':'')+fmt(n);
+const price=p=>(p/10).toFixed(1);
+const time=(second,secs=false)=>{const d=new Date(BASE+second*1000);return `${String((d.getUTCHours()+7)%24).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`+(secs?`:${String(d.getUTCSeconds()).padStart(2,'0')}`:'');};
+const setText=(id,value)=>{$(id).textContent=value;};
+function signedText(id,value,decimals=false){const e=$(id);e.textContent=decimals?(value>=0?'+':'')+value.toFixed(1)+'%':signed(value);e.classList.toggle('up',value>=0);e.classList.toggle('down',value<0);}
+function isGap(i){return state.gap&&frames[i]?.gap;}
+function obi(book,n=10){const b=book.bids.slice(0,n).reduce((v,l)=>v+l.qty,0),a=book.asks.slice(0,n).reduce((v,l)=>v+l.qty,0);return b+a?(b-a)/(b+a):null;}
+function getBars(start,end,tf){const map=new Map();for(let i=start;i<=end;i++){for(const t of frames[i].trades){const bt=Math.floor(i/tf)*tf;let b=map.get(bt);if(!b){b={time:bt,buy:0,sell:0,unknown:0,total:0,levels:new Map(),open:t.price,close:t.price,high:t.price,low:t.price};map.set(bt,b);}b.close=t.price;b.high=Math.max(b.high,t.price);b.low=Math.min(b.low,t.price);b.total+=t.qty;const field=t.side==='BUY'?'buy':t.side==='SELL'?'sell':'unknown';b[field]+=t.qty;const level=b.levels.get(t.price)||{buy:0,sell:0,unknown:0};level[field]+=t.qty;b.levels.set(t.price,level);}}
+  for(const b of map.values()){b.delta=b.buy-b.sell;b.poc=null;let max=-1;for(const [p,l] of [...b.levels].sort((a,b)=>a[0]-b[0])){const q=l.buy+l.sell+l.unknown;if(q>max){max=q;b.poc=p;}}}return [...map.values()];}
+function compute(){const end=state.cursor,start=Math.max(0,Math.floor(Math.max(0,end-state.window+1)/state.tf)*state.tf),frame=frames[end];if(state.follow)state.center=frame.price;current={start,end,frame,bars:getBars(start,end,state.tf)};}
+function surface(id){const canvas=$(id),r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);if(!r.width||!r.height)return null;const w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,r.width,r.height);return {ctx,w:r.width,h:r.height};}
+function scale(h){const plotTop=28,plotBottom=h-29,plotH=plotBottom-plotTop,step=plotH/state.rows;return {top:plotTop,bottom:plotBottom,step,y:p=>plotTop+plotH/2+(state.center-p)*step,tick:y=>Math.round(state.center-(y-plotTop-plotH/2)/step)};}
+function line(c,x1,y1,x2,y2,color,width=1,dash=[]){c.strokeStyle=color;c.lineWidth=width;c.setLineDash(dash);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.setLineDash([]);}
+function text(c,s,x,y,color=C.text,size=10,align='left'){c.fillStyle=color;c.font=`${size}px Consolas, "Liberation Mono", monospace`;c.textAlign=align;c.textBaseline='middle';c.fillText(s,x,y);}
+function grid(c,w,h,rightAxis=false){const sc=scale(h);for(let p=Math.floor(state.center-state.rows/2);p<=Math.ceil(state.center+state.rows/2);p++){const y=sc.y(p);if(y<sc.top||y>sc.bottom)continue;if(p%5===0){line(c,0,y,w,y,'#263036');if(rightAxis)text(c,price(p),w-7,y,C.muted,10,'right');}}return sc;}
+function crosshair(c,w,h,sc,start=current.start,end=current.end,axisWidth=0){if(!state.hover)return;const hover=state.hover;const y=sc.y(hover.price);if(y>sc.top&&y<sc.bottom)line(c,0,y,w,y,'#78949688',1,[3,4]);if(hover.second!=null){const x=(hover.second-start)/Math.max(1,end-start)*(w-axisWidth);if(x>=0&&x<=w-axisWidth)line(c,x,sc.top,x,sc.bottom,'#78949688',1,[3,4]);}}
+function drawFootprint(){const v=surface('footprint');if(!v)return;const {ctx:c,w,h}=v,sc=grid(c,w,h),axis=43,plot=w-axis,tf=state.tf,span=Math.max(state.window,tf),end=current.end,start=end-span+1;const barWidth=plot*tf/span;
+ c.save();c.beginPath();c.rect(0,sc.top,plot,sc.bottom-sc.top);c.clip();
+ for(const b of current.bars){const left=(b.time-start)/span*plot,right=left+barWidth,cx=(left+right)/2,max=Math.max(1,...[...b.levels.values()].map(l=>l.buy+l.sell+l.unknown));
+   line(c,right,sc.top,right,sc.bottom,'#232c32');const up=b.close>=b.open;
+   line(c,left+4,sc.y(b.high),left+4,sc.y(b.low),up?C.buy:C.sell,1);
+   c.fillStyle=up?'#69debb80':'#ec8d9280';c.fillRect(left+2,Math.min(sc.y(b.open),sc.y(b.close))-1,4,Math.max(3,Math.abs(sc.y(b.open)-sc.y(b.close))));
+   for(const [p,l] of b.levels){const y=sc.y(p),q=l.buy+l.sell+l.unknown;if(y<sc.top||y>sc.bottom)continue;
+     c.fillStyle=l.buy>=l.sell?`rgba(65,145,116,${.07+.29*q/max})`:`rgba(177,81,92,${.07+.29*q/max})`;c.fillRect(left+7,y-sc.step/2,Math.max(1,barWidth-10),sc.step-1);if(q>=200){c.fillStyle='#e8c7792a';c.fillRect(left+7,y-sc.step/2,Math.max(1,barWidth-10),sc.step-1);c.strokeStyle='#e8c779c0';c.lineWidth=1;c.strokeRect(left+7,y-sc.step/2,Math.max(1,barWidth-10),sc.step-1);if(barWidth>52)text(c,'◆',right-8,y,C.amber,7,'center');}
+     if(p===b.poc){c.strokeStyle='#e8c77991';c.lineWidth=.7;c.strokeRect(left+7,y-sc.step/2,Math.max(1,barWidth-10),sc.step-1);}
+     if(barWidth>52){const diagSell=b.levels.get(p-1)?.sell||0,diagBuy=b.levels.get(p+1)?.buy||0;const bi=state.imbalance&&l.buy>=20&&l.buy>=3*Math.max(1,diagSell),si=state.imbalance&&l.sell>=20&&l.sell>=3*Math.max(1,diagBuy);const font=Math.max(8,Math.min(11,sc.step*.76));text(c,l.sell?fmt(l.sell):'·',cx-3,y,si?C.sell:'#a5aeb7',font,'right');text(c,'×',cx+1,y,'#5c6d76',8,'center');text(c,l.buy?fmt(l.buy):'·',cx+7,y,bi?C.buy:'#d1dfdc',font,'left');if(barWidth>110){const delta=l.buy-l.sell;text(c,signed(delta),cx+49,y,delta>=0?C.buy:C.sell,font,'left');}if(bi||si){c.fillStyle=bi?C.buy:C.sell;c.fillRect(bi?right-3:left+7,y-2,2,4);}}
+   }
+ }
+ if(state.poc&&current.sessionPoc!==null){const y=sc.y(current.sessionPoc);line(c,0,y,plot,y,'#e8c77977',1,[4,4]);}
+ c.restore();c.fillStyle='#13181c';c.fillRect(plot,sc.top,axis,h-sc.top);
+ for(let p=Math.floor(state.center-state.rows/2);p<=Math.ceil(state.center+state.rows/2);p++){const y=sc.y(p);if(y<sc.top||y>sc.bottom)continue;if(p%5===0)text(c,price(p),w-5,y,C.muted,9,'right');}
+ for(const b of current.bars){const cx=((b.time+tf/2)-start)/span*plot;if(cx<12||cx>plot-12)continue;text(c,time(b.time),cx,h-13,C.muted,9,'center');}
+ const lp=sc.y(current.frame.price);if(lp>=sc.top&&lp<=sc.bottom){c.fillStyle='#29413a';c.fillRect(plot,lp-8,axis,16);text(c,price(current.frame.price),w-5,lp,C.buy,9,'right');}
+ crosshair(c,w,h,sc,start,end,axis);
+}
+let historyCursor=-1,bookHistory=new Map(),bookFocus=null;
+function updateBookHistory(){
+ if(state.cursor<historyCursor){bookHistory.clear();historyCursor=-1;}
+ for(let i=historyCursor+1;i<=state.cursor;i++){
+  if(frames[i].gap)continue;
+  for(const [levels,side] of [[frames[i].bids,'bid'],[frames[i].asks,'ask']])for(const l of levels){
+   let entry=bookHistory.get(l.price);if(!entry){entry={price:l.price};bookHistory.set(l.price,entry);}
+   let h=entry[side];if(!h)h=entry[side]={max:l.qty,maxAt:i,last:l.qty,lastAt:i};
+   if(l.qty>h.max){h.max=l.qty;h.maxAt=i;}h.last=l.qty;h.lastAt=i;
+  }
+ }
+ historyCursor=state.cursor;
+}
+function drawDom(){
+ updateBookHistory();const f=current.frame,gap=isGap(state.cursor),entries=[...bookHistory.values()].sort((a,b)=>b.price-a.price),bids=new Map(gap?[]:f.bids.map(l=>[l.price,l.qty])),asks=new Map(gap?[]:f.asks.map(l=>[l.price,l.qty]));
+ const maxBid=Math.max(0,...entries.map(e=>e.bid?.max||0)),maxAsk=Math.max(0,...entries.map(e=>e.ask?.max||0)),liveMax=Math.max(1,...bids.values(),...asks.values());
+ const rows=entries.map(e=>{const bid=bids.get(e.price),ask=asks.get(e.price),active=bid!==undefined||ask!==undefined;
+  const tip=side=>{const h=e[side];return h?`Đỉnh ${fmt(h.max)} HĐ lúc ${time(h.maxAt,true)}; lần cuối ${fmt(h.last)} HĐ lúc ${time(h.lastAt,true)}`:'Chưa ghi nhận phía này';};
+  return `<tr data-price="${e.price}" class="${active?'':'historical'} ${!gap&&e.price===f.bids[0].price?'best-bid':''} ${!gap&&e.price===f.asks[0].price?'best-ask':''}"><td class="peak ${e.bid?.max===maxBid?'record':''}" title="${tip('bid')}">${e.bid?fmt(e.bid.max):'—'}</td><td class="${bid!==undefined?'live-bid':''}" style="--depth:${(bid||0)/liveMax*100}%" title="Bid hiện tại">${bid===undefined?'—':fmt(bid)}</td><td class="price-cell ${e.price===f.price?'last-price-cell':''}">${price(e.price)}</td><td class="${ask!==undefined?'live-ask':''}" style="--depth:${(ask||0)/liveMax*100}%" title="Ask hiện tại">${ask===undefined?'—':fmt(ask)}</td><td class="peak peak-ask ${e.ask?.max===maxAsk?'record':''}" title="${tip('ask')}">${e.ask?fmt(e.ask.max):'—'}</td></tr>`;
+ }).join('');
+ const body=$('book-rows');if(body.innerHTML!==rows)body.innerHTML=rows;
+ const book=$('dom-book'),focus=String(f.price)+':'+state.follow+':'+entries.length;
+ if(state.follow&&focus!==bookFocus){const row=body.querySelector(`[data-price="${f.price}"]`);if(row)book.scrollTop=Math.max(0,row.offsetTop-book.clientHeight/2+row.offsetHeight/2);}bookFocus=focus;
+ setText('history-high',entries.length?price(entries[0].price):'—');setText('history-count',fmt(entries.length));
+ for(const [side,max]of [['bid',maxBid],['ask',maxAsk]]){const entry=entries.find(e=>e[side]?.max===max);setText('history-max-'+side,entry?`${fmt(max)} @ ${price(entry.price)}`:'—');}
+}
+function heatColor(q,max){let t=state.scale==='log'?Math.log1p(q)/Math.log1p(max):q/max;t=Math.max(0,Math.min(1,t));const stops=[[15,27,27],[24,47,42],[34,84,66],[83,112,58],[173,156,64],[246,215,119]],position=t*(stops.length-1),index=Math.min(stops.length-2,Math.floor(position)),fraction=position-index,a=stops[index],b=stops[index+1];return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*fraction)).join(',')})`;}
+function hatch(c,x,y,w,h){c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.fillStyle='#24313b60';c.fillRect(x,y,w,h);for(let n=x-h;n<x+w+h;n+=8)line(c,n,y,n+h,y+h,'#4f66774f',.6);c.restore();}
+
+function render(){compute();drawFootprint();drawDom();const f=current.frame,b=current.bars.at(-1),gap=isGap(state.cursor);setText('last-price',price(f.price));setText('clock',time(state.cursor,true));$('timeline').max=frames.length-1;$('timeline').value=state.cursor;for(const k of ['buy','sell','delta','unknown'])setText('bar-'+k,k==='delta'?signed(b?.delta||0):fmt(b?.[k]||0));$('bar-delta').className=(b?.delta||0)>=0?'up':'down';setText('range',time(current.start)+' — '+time(current.end));setText('bid-depth',gap?'—':fmt(f.bids.reduce((s,l)=>s+l.qty,0)));setText('ask-depth',gap?'—':fmt(f.asks.reduce((s,l)=>s+l.qty,0)));setText('spread',gap?'—':price(f.asks[0].price-f.bids[0].price));setText('obi',gap?'—':(obi(f)*100).toFixed(1)+'%');setText('book-state',gap?'QUOTE UNKNOWN':'10 BID × 10 ASK');setText('status',gap?'Quote UNKNOWN · Tape vẫn hoạt động':state.running?'DEMO · ĐANG PHÁT':'DEMO · TẠM DỪNG');setText('play',state.running?'Tạm dừng':'Phát');$('step').disabled=state.running;$('live').setAttribute('aria-pressed',String(state.live));$('speed').disabled=state.live;if(state.live)setText('status','LIVE · MÔ PHỎNG LIÊN TỤC · 1 GIÂY/TICK');dirty=false;}
+function resetHover() {state.hover=null;$('tooltip').classList.add('hidden');}
+let accumulator=0;
+$('play').onclick=()=>{state.running=!state.running;state.live=state.running&&state.cursor===frames.length-1;accumulator=0;resetHover();dirty=true;};
+$('step').onclick=()=>{state.running=false;state.live=false;state.cursor=Math.min(frames.length-1,state.cursor+1);resetHover();dirty=true;};
+$('live').onclick=()=>{state.cursor=frames.length-1;state.running=true;state.live=true;state.follow=true;$('follow').checked=true;accumulator=0;bookFocus=null;resetHover();dirty=true;};
+$('restart').onclick=()=>{state.live=false;state.cursor=0;accumulator=0;resetHover();dirty=true;};
+$('timeline').oninput=e=>{state.cursor=Math.max(0,Math.min(frames.length-1,+e.target.value));state.running=false;state.live=false;accumulator=0;resetHover();dirty=true;};
+for(const [id,key]of [['timeframe','tf'],['window','window'],['speed','speed']])$(id).onchange=e=>{state[key]=+e.target.value;resetHover();dirty=true;};
+for(const key of ['imbalance','follow'])$(key).onchange=e=>{state[key]=e.target.checked;dirty=true;};
+function zoom(n){state.rows=Math.max(20,Math.min(90,state.rows+n));resetHover();dirty=true;}
+$('zoom-in').onclick=()=>zoom(-4);$('zoom-out').onclick=()=>zoom(4);$('center').onclick=()=>{state.follow=true;state.rows=32;$('follow').checked=true;dirty=true;};
+for(const id of canvases){const canvas=$(id);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?4:-4);},{passive:false});canvas.onpointerdown=e=>{if(e.button!==0)return;state.drag={id,y:e.clientY,center:state.center};canvas.setPointerCapture(e.pointerId);resetHover();};canvas.onpointerup=canvas.onpointercancel=e=>{state.drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);};canvas.onpointerleave=()=>{resetHover();dirty=true;};canvas.onpointermove=e=>{const r=canvas.getBoundingClientRect(),sc=scale(r.height),y=e.clientY-r.top;if(state.drag){state.center=state.drag.center+(e.clientY-state.drag.y)/sc.step;state.follow=false;$('follow').checked=false;dirty=true;return;}if(y<sc.top||y>sc.bottom){resetHover();dirty=true;return;}const p=sc.tick(y),x=e.clientX-r.left,plot=r.width-43,span=state.window,start=state.cursor-span+1;if(id==='footprint'&&x>plot){resetHover();dirty=true;return;}const second=id==='dom'?state.cursor:Math.max(0,Math.min(state.cursor,Math.floor(start+x/plot*span)));state.hover={price:p,second:id==='dom'?null:second};let detail=price(p)+' · '+time(second,true)+'\n';if(id==='dom'){const f=current.frame,gap=isGap(state.cursor);detail+='Bid: '+(gap?'UNKNOWN':f.bids.find(l=>l.price===p)?.qty??'UNKNOWN')+'\nAsk: '+(gap?'UNKNOWN':f.asks.find(l=>l.price===p)?.qty??'UNKNOWN');}else{const b=current.bars.find(b=>second>=b.time&&second<b.time+state.tf),l=b?.levels.get(p);detail+='Sell: '+fmt(l?.sell||0)+' × Buy: '+fmt(l?.buy||0)+'\nDelta: '+signed((l?.buy||0)-(l?.sell||0))+' · Unknown: '+fmt(l?.unknown||0);}const tip=$('tooltip');tip.textContent=detail;tip.classList.remove('hidden');const box=tip.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(e.clientX+16,innerWidth-box.width-8))+'px';tip.style.top=Math.max(8,Math.min(e.clientY+16,innerHeight-box.height-8))+'px';dirty=true;};}
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName)){e.preventDefault();$('play').click();}if(e.key==='Escape'){resetHover();dirty=true;}});
+new ResizeObserver(()=>{dirty=true;}).observe(document.querySelector('.terminal'));
+// The source clock runs independently of replay, pause and replay speed.
+let lastTick=performance.now(),sourceAccumulator=0;
+function tickSimulation(now){
+ const elapsed=Math.max(0,now-lastTick);lastTick=now;sourceAccumulator+=elapsed;
+ const newFrames=Math.floor(sourceAccumulator/1000);sourceAccumulator%=1000;
+ for(let n=0;n<newFrames;n++)appendFrame();
+ if(newFrames)dirty=true;
+ if(state.live){state.cursor=frames.length-1;accumulator=0;}
+ else if(state.running){accumulator+=elapsed*state.speed;const advance=Math.floor(accumulator/1000);accumulator%=1000;if(advance){state.cursor=Math.min(frames.length-1,state.cursor+advance);if(state.cursor===frames.length-1){state.live=true;accumulator=0;}dirty=true;}}
+ else accumulator=0;
+ if(newFrames&&state.live)resetHover();
+ if(dirty)render();
+}
+setInterval(()=>tickSimulation(performance.now()),100);render();
+})();</script></body></html>

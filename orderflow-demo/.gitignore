@@ -1,0 +1,5 @@
+.replay-cache/
+__pycache__/
+dist/replay-data/
+reports/*.csv
+reports/*.json

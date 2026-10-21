@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+data/live/
+CODEX_SESSION_*.md
+data/quotes
+data/trade_tape

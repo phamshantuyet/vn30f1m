@@ -1,0 +1,7 @@
+# Select this profile only for this project with orderflow-demo/start_codex.sh.
+# Broad local access is intentional: it permits localhost binding and DNSE WSS.
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
+
+[projects."/mnt/c/shanx2026/vn30f1m"]
+trust_level = "trusted"
