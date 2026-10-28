@@ -54,6 +54,19 @@ small{font-size:10px}
 .max-history .book-wrap{max-height:380px}
 .max-history .book{min-width:760px}
 .price-large{display:block;padding:5px 7px;background:#fff;color:#001f6b;border:2px solid;border-color:#808080 #fff #fff #808080;font:700 30px Tahoma,Arial,sans-serif}
+.price-change{padding:4px 6px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
+.price-change .kv{margin:5px 0}.price-change .kv:last-child{border-bottom:0}
+.price-change .change-up{color:#086632}.price-change .change-down{color:#a32132}.price-change .change-flat{color:#555}
+.ohlcv-alert{padding:7px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
+.ohlcv-alert strong{display:block;margin:4px 0;font:700 21px Tahoma,Arial,sans-serif;color:#001f6b}
+.ohlcv-alert .muted{font-size:10px}
+.ohlcv-alert.is-warning{background:#b00020;color:#fff;border:3px solid #ffe14d;box-shadow:0 0 0 3px #ff4b78,0 0 16px #ff1744;animation:ohlcv-flash .8s steps(2,end) infinite}
+.ohlcv-alert.is-warning strong{color:#fff36b;font:900 36px Tahoma,Arial,sans-serif;line-height:1.15;text-shadow:2px 2px #650018;animation:ohlcv-volume-flash .8s steps(2,end) infinite}
+.ohlcv-alert.is-warning #ohlcv-state{display:block;font-size:13px;font-weight:900;letter-spacing:.3px}
+.ohlcv-alert.is-warning .muted{color:#fff;font-weight:700}
+@keyframes ohlcv-flash{50%{background:#f01843;border-color:#52f8ff;box-shadow:0 0 0 3px #ffe14d,0 0 22px #f01843}}
+@keyframes ohlcv-volume-flash{50%{color:#73fff6;text-shadow:2px 2px #660014}}
+@media(prefers-reduced-motion:reduce){.ohlcv-alert.is-warning,.ohlcv-alert.is-warning strong{animation:none}}
 .stack{display:grid;gap:8px;align-content:start}
 .kv{display:flex;justify-content:space-between;gap:8px;margin:8px 0;padding-bottom:4px;border-bottom:1px dotted #8a8a8a;font-size:11px}
 .kv strong{font:700 12px Tahoma,Arial,sans-serif;text-align:right}
@@ -131,13 +144,36 @@ small{font-size:10px}
 .contribution-total{display:flex;justify-content:space-between;gap:8px;padding:7px 9px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;font-size:11px}
 .contribution-total strong{font:700 14px "Courier New",monospace;white-space:nowrap}
 .contribution-total.up strong{color:#086632}.contribution-total.down strong{color:#a32132}
-@media(max-width:700px){body{padding:0}main{margin:0;padding:6px;border-width:2px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}.book-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.contribution-totals{grid-template-columns:1fr}header{align-items:flex-start;flex-wrap:wrap}.pill{max-width:100%}.book{min-width:520px}}
+.breadth-panel{margin-top:8px}
+.breadth-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.breadth-card{min-width:0;padding:9px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
+.breadth-card h3{margin:0 0 4px;font-size:12px}
+.breadth-time{min-height:16px;margin-bottom:8px;color:#555;font-size:10px}
+.breadth-bar{display:flex;height:34px;overflow:hidden;background:#eee;border:1px solid #777}
+.breadth-segment{height:100%}.breadth-segment.up{background:#168047}.breadth-segment.down{background:#b22a3d}.breadth-segment.flat{background:#888}
+.breadth-counts{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;font-weight:700}
+.breadth-counts .up{color:#086632}.breadth-counts .down{color:#a32132}.breadth-counts .flat{color:#555}
+.breadth-empty{display:flex;align-items:center;justify-content:center;width:100%;font-size:11px;color:#555}
+.basis-panel{margin-top:8px}
+.basis-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px}
+.basis-controls label{display:flex;align-items:center;gap:6px;font-weight:700}
+.basis-controls input{padding:3px 5px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;font:11px Tahoma,Arial,sans-serif}
+.basis-chart-wrap{overflow-x:auto;background:#050505;border:2px solid;border-color:#808080 #fff #fff #808080}
+.basis-chart{display:block;width:100%;min-width:760px;height:370px;font:12px Tahoma,Arial,sans-serif}
+.basis-chart .axis{stroke:#404040;stroke-width:1}.basis-chart .grid{stroke:#242424;stroke-width:1;stroke-dasharray:5 6}
+.basis-chart .vn30-baseline{stroke:#bcbcbc;stroke-width:2}
+.basis-chart .positive{fill:#20a952}.basis-chart .negative{fill:#f12630}
+.basis-chart .point.positive{fill:#20a952}.basis-chart .point.negative{fill:#f12630}
+.basis-chart .tick{fill:#858585}
+.basis-legend{display:flex;gap:15px;flex-wrap:wrap;font-size:11px;font-weight:700}
+.basis-legend .vn30{color:#555}.basis-legend .positive{color:#168047}.basis-legend .negative{color:#b22a3d}
+@media(max-width:700px){body{padding:0}main{margin:0;padding:6px;border-width:2px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}.book-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.contribution-totals,.breadth-grid{grid-template-columns:1fr}header{align-items:flex-start;flex-wrap:wrap}.pill{max-width:100%}.book{min-width:520px}}
 </style>
 </head><body><main>
-<header><div><h1>DOM · đo độ trễ trực tiếp</h1><div class="muted">Quote + Trade Extra qua WebSocket riêng của server · <a href="/orderflow-live.html">Trang Order Flow</a> · <a href="#impact-preview">Bản đồ VN30 mẫu</a></div></div><span id="status" class="pill">ĐANG KẾT NỐI</span></header>
+<header><div><h1>DOM · đo độ trễ trực tiếp</h1><div class="muted">Quote + Trade Extra + giá tham chiếu qua WebSocket riêng của server · <a href="/orderflow-live.html">Trang Order Flow</a> · <a href="#impact-preview">Bản đồ VN30 mẫu</a></div></div><span id="status" class="pill">ĐANG KẾT NỐI</span></header>
 <div class="layout">
  <section class="panel dom-panel"><h2><span class="box-number">2</span>DOM · sổ lệnh theo mức giá</h2><div class="dom-controls"><span class="muted" id="book-range">Đang chờ Quote…</span><button id="book-current" type="button">Về giá hiện tại</button></div><div class="book-wrap" id="book-wrap"><table class="book"><thead><tr><th>MAX BID</th><th>BID</th><th>GIÁ</th><th>ASK</th><th>MAX ASK</th></tr></thead><tbody id="book"></tbody></table></div><div class="book-summary"><div>BID DEPTH<strong id="bid-depth">—</strong></div><div>ASK DEPTH<strong id="ask-depth">—</strong></div><div>SPREAD<strong id="spread">—</strong></div><div>OBI<strong id="obi">—</strong></div></div><section class="max-history"><h2><span class="box-number">3</span>MAX lớn nhất từ đầu phiên</h2><div class="muted">Top 10 mức giá mỗi bên · nạp từ Quote đã lưu và cập nhật realtime</div><div class="book-wrap"><table class="book"><thead><tr><th>#</th><th>GIÁ BID</th><th>MAX BID (HĐ)</th><th>GIỜ QUOTE</th><th>GIÁ ASK</th><th>MAX ASK (HĐ)</th><th>GIỜ QUOTE</th></tr></thead><tbody id="max-history"><tr><td colspan="7" class="muted">Đang chờ Quote…</td></tr></tbody></table></div></section></section>
- <div class="stack"><section class="panel"><h2><span class="box-number">4</span>Giao dịch gần nhất</h2><div class="price-large" id="last-price">—</div><div class="kv"><span>Khối lượng</span><strong id="last-qty">—</strong></div><div class="kv"><span>Chiều chủ động</span><strong id="last-side">—</strong></div><div class="kv"><span>Giờ nguồn</span><strong id="trade-source">—</strong></div></section>
+ <div class="stack"><section class="panel"><h2><span class="box-number">13</span>Biến động giá hiện tại</h2><div class="price-change"><div class="kv"><span>Giá khớp gần nhất</span><strong id="change-last">—</strong></div><div class="kv"><span>Giá tham chiếu</span><strong id="change-reference">—</strong></div><div class="kv"><span>So với tham chiếu</span><strong id="change-vs-reference">—</strong></div><div class="kv"><span>Giá mở cửa</span><strong id="change-open">—</strong></div><div class="kv"><span>So với mở cửa</span><strong id="change-vs-open">—</strong></div></div></section><section class="panel"><h2><span class="box-number">14</span>Cảnh báo volume nến 1 phút</h2><div class="ohlcv-alert" id="ohlcv-alert"><span id="ohlcv-minute">Đang chờ nến…</span><strong id="ohlcv-volume">—</strong><span id="ohlcv-state">Chưa có dữ liệu OHLCV</span><div class="muted">Cảnh báo khi nến chưa đóng có volume &gt; 1.500 HĐ.</div></div></section><section class="panel"><h2><span class="box-number">4</span>Giao dịch gần nhất</h2><div class="price-large" id="last-price">—</div><div class="kv"><span>Khối lượng</span><strong id="last-qty">—</strong></div><div class="kv"><span>Chiều chủ động</span><strong id="last-side">—</strong></div><div class="kv"><span>Giờ nguồn</span><strong id="trade-source">—</strong></div></section>
  <section class="panel"><h2><span class="box-number">5</span>Mốc của Quote vừa nhận</h2><div class="kv"><span>Giờ nguồn</span><strong id="quote-source">—</strong></div><div class="kv"><span>SDK nhận</span><strong id="quote-received">—</strong></div><div class="kv"><span>Server đẩy</span><strong id="quote-sent">—</strong></div><div class="kv"><span>Trang nhận</span><strong id="quote-browser">—</strong></div><div class="kv"><span>Best BID / ASK</span><strong id="best">—</strong></div><div class="kv"><span>Bản tin vượt bộ đệm RAM</span><strong id="lost">0</strong></div><div class="trade-stats"><h3>Trade Extra mới nhất · theo DNSE</h3><div class="kv"><span>totalVolumeTraded</span><strong id="trade-total-volume">—</strong></div><div class="kv"><span>grossTradeAmount</span><strong id="trade-gross-amount">—</strong></div><div class="kv"><span>avgPrice</span><strong id="trade-avg-price">—</strong></div><div class="kv"><span>highestPrice</span><strong id="trade-high-price">—</strong></div><div class="kv"><span>lowestPrice</span><strong id="trade-low-price">—</strong></div><div class="kv"><span>openPrice</span><strong id="trade-open-price">—</strong></div></div></section>
  <section class="panel index-panel" id="index-panel"><h2><span class="box-number">9</span>VN30 · Chỉ số và Basis</h2><div class="index-status" id="index-status">ĐANG CHỜ DNSE</div><div class="index-card"><h3>Market Index · VN30 chính thức</h3><strong class="index-value" id="index-market-value">—</strong><span class="index-change" id="index-market-change">—</span><div class="kv"><span>Tham chiếu / cao / thấp</span><strong id="index-market-range">—</strong></div><div class="kv"><span>Tăng / giảm / đứng</span><strong id="index-market-breadth">—</strong></div><div class="kv"><span>Khối lượng / giá trị</span><strong id="index-market-liquidity">—</strong></div><div class="muted" id="index-market-time">Giờ DNSE: —</div></div><div class="index-card"><h3>Estimated VN30 · DNSE dự tính</h3><strong class="index-value" id="index-estimated-value">—</strong><span class="index-change" id="index-estimated-change">—</span><div class="kv"><span>Tăng / giảm / đứng</span><strong id="index-estimated-breadth">—</strong></div><div class="kv"><span>Khối lượng / giá trị</span><strong id="index-estimated-liquidity">—</strong></div><div class="muted" id="index-estimated-time">Giờ DNSE: —</div></div><div class="kv"><span id="index-future-symbol">Hợp đồng · khớp cuối</span><strong id="index-future-last">—</strong></div><div class="kv"><span>Basis so với VN30</span><strong class="index-basis" id="index-basis-market">—</strong></div><div class="kv"><span>Basis so với VN30 dự tính</span><strong class="index-basis" id="index-basis-estimated">—</strong></div><div class="muted" id="index-future-time">Giờ khớp cuối: —</div><div class="muted">Basis = giá khớp cuối hợp đồng − chỉ số VN30 tương ứng. VN30 dự tính là giá trị DNSE gửi, không tự nội suy từ mã thành phần.</div></section></div>
 </div>
@@ -145,6 +181,8 @@ small{font-size:10px}
 <section class="panel impact-preview" id="impact-preview"><h2><span class="box-number">7</span>Bản đồ mã tác động đến VN30</h2><div class="impact-intro"><span>Trục ngang: thời gian giao dịch theo khung đã chọn (nghỉ trưa thu gọn) · Trục dọc: điểm đóng góp cộng dồn của các mã đang hiển thị tại từng mốc.</span><span class="impact-badge" id="impact-badge">DỮ LIỆU MẪU · CHƯA NỐI DNSE</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Tăng điểm</span><span><i class="impact-key down"></i>Giảm điểm</span><span class="muted">Mỗi ô chữ nhật = một mã tại một thời điểm</span></div><div class="impact-controls"><label for="impact-interval">Khung <input id="impact-interval" type="number" min="1" max="1440" step="1" value="1" inputmode="numeric" aria-label="Khung thời gian bản đồ, đơn vị phút"> phút</label><button id="impact-older" type="button">◀ Cũ hơn</button><button id="impact-latest" type="button">Mới nhất ▶</button><span id="impact-visible" class="muted">Đang dựng lịch sử mẫu…</span></div><div class="impact-chart-wrap" id="impact-chart-wrap"><svg class="impact-chart" id="impact-map" viewBox="0 0 1000 510" role="img" aria-label="Bản đồ minh họa tác động của các mã lên VN30 theo thời gian; xanh tăng, đỏ giảm"></svg></div><div class="impact-footer"><span id="impact-focus"><strong>Di chuột hoặc chạm vào ô</strong> để xem mã và số điểm đóng góp.</span><span class="muted" id="impact-description">12 mã, 186 mốc 1 phút minh họa · kéo thanh cuộn ngang để xem lịch sử · tổng chỉ gồm các mã đang vẽ, không phải mức biến động VN30 thực tế.</span></div></section>
 <section class="panel impact-area-panel" id="impact-area-panel"><h2><span class="box-number">8</span>100% Stacked Area Chart · tỷ trọng ảnh hưởng VN30</h2><div class="impact-intro"><span>Mỗi mốc chuẩn hóa tổng |điểm ảnh hưởng| của các mã DNSE gửi thành 100%; chiều tăng màu xanh, chiều giảm màu đỏ.</span><span class="muted">Dùng ô Khung ở box 7 · cuộn ngang đồng bộ</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Tỷ trọng kéo tăng</span><span><i class="impact-key down"></i>Tỷ trọng kéo giảm</span><span class="muted">Vùng liền nhau biểu diễn các mốc liên tiếp có dữ liệu</span></div><div class="impact-chart-wrap" id="impact-area-wrap"><svg class="impact-area-chart" id="impact-area" viewBox="0 0 1000 350" role="img" aria-label="Biểu đồ diện tích xếp chồng 100% tỷ trọng độ lớn điểm ảnh hưởng các mã lên VN30"></svg></div><div class="impact-footer"><span id="impact-area-focus"><strong>Di chuột hoặc chạm vào vùng màu</strong> để xem mã, điểm và tỷ trọng.</span><span class="muted" id="impact-area-description">Chỉ chuẩn hóa các mã có trong bản tin DNSE; mã vắng mặt không được coi là 0 điểm.</span></div></section>
 <section class="panel contribution-panel" id="contribution-panel"><h2><span class="box-number">10</span>Index Contribution Chart · đóng góp vào VN30</h2><div class="impact-intro"><span>Ảnh chụp mới nhất từ DNSE · điểm kéo tăng sang phải, điểm kéo giảm sang trái trục 0.</span><span class="impact-badge" id="contribution-status">ĐANG CHỜ DNSE</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Kéo tăng VN30</span><span><i class="impact-key down"></i>Kéo giảm VN30</span><span class="muted" id="contribution-time">Mốc nhận: —</span></div><div class="contribution-wrap"><svg class="contribution-chart" id="contribution-chart" viewBox="0 0 1000 340" role="img" aria-label="Biểu đồ thanh ngang phân kỳ điểm đóng góp của từng mã vào VN30 tại thời điểm mới nhất"></svg></div><div class="contribution-totals"><div class="contribution-total up"><span>Mức điểm đóng góp tăng</span><strong id="contribution-up-total">—</strong></div><div class="contribution-total down"><span>Mức điểm đóng góp giảm</span><strong id="contribution-down-total">—</strong></div></div><div class="impact-footer"><span class="muted" id="contribution-description">Chỉ gồm các mã có trong bản tin DNSE mới nhất; mã vắng mặt không được coi là 0 điểm.</span></div></section>
+<section class="panel breadth-panel" id="breadth-panel"><h2><span class="box-number">11</span>Số mã tăng / giảm / đứng giá · VN30</h2><div class="impact-intro">Số lượng theo bản tin chỉ số DNSE mới nhất qua WSS. Mỗi thanh tính tỷ lệ trong tổng số mã mà bản tin đó báo cáo.</div><div class="breadth-grid"><div class="breadth-card"><h3>VN30 chính thức</h3><div class="breadth-time" id="breadth-market-time">Đang chờ dữ liệu…</div><div class="breadth-bar" id="breadth-market-bar" role="img" aria-label="Số mã tăng, giảm, đứng giá của VN30 chính thức"></div><div class="breadth-counts" id="breadth-market-counts"></div></div><div class="breadth-card"><h3>VN30 dự tính</h3><div class="breadth-time" id="breadth-estimated-time">Đang chờ dữ liệu…</div><div class="breadth-bar" id="breadth-estimated-bar" role="img" aria-label="Số mã tăng, giảm, đứng giá của VN30 dự tính"></div><div class="breadth-counts" id="breadth-estimated-counts"></div></div></div></section>
+<section class="panel basis-panel" id="basis-panel"><h2><span class="box-number">12</span>Phái sinh quanh đường chuẩn VN30 · 1D</h2><div class="basis-controls"><label for="basis-day">Ngày <input id="basis-day" type="date" aria-label="Ngày lịch sử basis"></label><span id="basis-status" class="muted">Đang chờ dữ liệu…</span></div><div class="basis-legend"><span class="vn30">━ VN30 · đường chuẩn 0</span><span class="positive">■ Phái sinh cao hơn VN30</span><span class="negative">■ Phái sinh thấp hơn VN30</span></div><div class="basis-chart-wrap"><svg class="basis-chart" id="basis-chart" viewBox="0 0 1000 370" role="img" aria-label="Vùng xanh khi phái sinh cao hơn VN30, vùng đỏ khi thấp hơn, từ 09 giờ đến 14 giờ 45"></svg></div><div class="impact-footer"><span id="basis-latest">Độ lệch cuối: —</span><span class="muted">Trục dọc là điểm lệch: phái sinh − VN30 chính thức. Khoảng thiếu dữ liệu để trống.</span></div></section>
 <p class="note">Luồng này gửi bản ghi mới từ RAM, không chờ SQLite và không dựng biểu đồ/đánh giá. DOM có thể cuộn qua toàn bộ mức giá BID/ASK đã xuất hiện trong Quote của phiên, đồng thời giữ 61 mức quanh best bid/ask để xem vùng giá hiện tại. Khoảng giá chưa ghi nhận được thu gọn; nút “Về giá hiện tại” đưa bạn trở lại best BID/ASK. Số BID/ASK màu xám là khối lượng cuối cùng đã ghi nhận tại mức giá đó khi nó không còn trong Quote hiện tại; không coi là lệnh đang chờ. MAX được nạp từ Quote đã lưu từ đầu phiên và tiếp tục cập nhật realtime. Mọi Quote đều được tính vào MAX; DOM vẽ Quote mới nhất trước mỗi lần làm mới màn hình. Dấu *: giờ nguồn DNSE và đồng hồ máy mở trang có thể lệch với đồng hồ server; số âm hoặc lớn bất thường cần kiểm tra đồng hồ. Nhìn “SDK → cache RAM” và “Cache RAM → server gửi” để xác định chậm trong server; nhìn số Quote mỗi đợt và khoảng cách nhận để xác định nhịp dữ liệu đầu vào.</p>
 <h2><span class="box-number">1</span>Thông số độ trễ và nhịp Quote</h2><div class="grid">
  <div class="metric"><span>DNSE → SDK*</span><b id="source-lag">—</b></div>
@@ -165,12 +203,14 @@ const fmtMs=n=>Number.isFinite(n)?Math.round(n)+' ms':'—';
 const price=n=>n==null?'—':(n/10).toFixed(1);
 const sourceNumber=(n,decimals=8)=>n==null||!Number.isFinite(Number(n))?'—':Number(n).toLocaleString('vi-VN',{maximumFractionDigits:decimals});
 function renderTradeStats(stats){
+ lastTradeStats=stats||null;
  set('trade-total-volume',sourceNumber(stats?.totalVolumeTraded,0));
  set('trade-gross-amount',sourceNumber(stats?.grossTradeAmount));
  set('trade-avg-price',sourceNumber(stats?.avgPrice));
  set('trade-high-price',sourceNumber(stats?.highestPrice));
  set('trade-low-price',sourceNumber(stats?.lowestPrice));
  set('trade-open-price',sourceNumber(stats?.openPrice));
+ renderPriceChange();
 }
 const impactSample=[
  ['VCB',[.8,.9,.7,.4,-.2,-.5,.1,.5]],['VIC',[.7,.8,.6,.3,-.6,-.8,-.4,.2]],
@@ -492,12 +532,141 @@ function connectInfluence(){
 renderImpactMap();
 renderContributionChart();
 let socket=null,retry=500,quoteCount=0,tradeCount=0,lostTotal=0,lastQuoteReceived=null,burst=0,log=[];
-let lastTradePrice=null,lastTradeSourceMs=null,rawDay=null,bookBids=[],bookAsks=[],sessionKey=null,lastEventSource=null,lastTradeStatsSource=-1;
+let lastTradePrice=null,lastTradeSourceMs=null,lastTradeStats=null,referencePrice=null,ohlcvLatest=null,rawDay=null,bookBids=[],bookAsks=[],sessionKey=null,lastEventSource=null,lastTradeStatsSource=-1;
 let indexMarket=null,indexEstimated=null,indexSocket=null,indexRetry=500,indexDay=null,indexStatus='offline';
 const indexClock=ms=>ms==null?'—':new Date(ms).toLocaleTimeString('vi-VN',{timeZone:'Asia/Bangkok',hour12:false});
 const indexNumber=(n,digits=2)=>n==null?'—':Number(n).toLocaleString('vi-VN',{
  minimumFractionDigits:digits,maximumFractionDigits:digits});
 const indexSigned=n=>n==null?'—':`${n>0?'+':''}${indexNumber(n)}`;
+function renderPriceChange(){
+ const last=lastTradePrice==null?null:lastTradePrice/10;
+ const open=Number(lastTradeStats?.openPrice);
+ const reference=Number(referencePrice);
+ set('change-last',last==null?'—':sourceNumber(last,1));
+ set('change-reference',referencePrice==null||!Number.isFinite(reference)||reference<=0?'—':sourceNumber(reference,1));
+ set('change-open',lastTradeStats?.openPrice==null||!Number.isFinite(open)||open<=0?'—':sourceNumber(open,1));
+ for(const [id,base] of [['change-vs-reference',referencePrice==null?null:reference],
+                         ['change-vs-open',lastTradeStats?.openPrice==null?null:open]]){
+  const target=$(id);
+  if(last==null||!Number.isFinite(base)||base<=0){target.textContent='—';target.className='';continue;}
+  const delta=last-base,pct=delta/base*100;
+  const signed=(value,digits)=>`${value>0?'+':''}${Number(value.toFixed(digits)).toLocaleString('vi-VN',{
+   minimumFractionDigits:digits,maximumFractionDigits:digits})}`;
+  target.textContent=`${signed(delta,1)} điểm (${signed(pct,2)}%)`;
+  target.className=delta>0?'change-up':delta<0?'change-down':'change-flat';
+ }
+}
+function renderOhlcvAlert(){
+ const candle=ohlcvLatest,alert=!!candle&&!candle.closed&&candle.volume>1500;
+ $('ohlcv-alert').className='ohlcv-alert'+(alert?' is-warning':'');
+ if(!candle){
+  set('ohlcv-minute','Đang chờ nến…');set('ohlcv-volume','—');
+  set('ohlcv-state','Chưa có dữ liệu OHLCV');return;
+ }
+ const minute=new Date(candle.minute_ms).toLocaleTimeString('vi-VN',{
+  timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false});
+ set('ohlcv-minute',`Nến ${minute} · ${candle.closed?'đã đóng':'chưa đóng'}`);
+ set('ohlcv-volume',`${candle.volume.toLocaleString('vi-VN')} HĐ`);
+ set('ohlcv-state',alert?'CẢNH BÁO: VOLUME VƯỢT 1.500 HĐ':
+     candle.closed?'Nến đã đóng':'Volume chưa vượt ngưỡng');
+}
+function useOhlcv(candle){
+ if(!candle||!Number.isFinite(candle.minute_ms)||!Number.isSafeInteger(candle.volume)||
+    candle.volume<0||!Number.isFinite(candle.updated_ms))return;
+ const old=ohlcvLatest;
+ if(old&&(candle.minute_ms<old.minute_ms||candle.minute_ms===old.minute_ms&&
+    (Number(!!candle.closed)<Number(!!old.closed)||
+     !!candle.closed===!!old.closed&&candle.updated_ms<old.updated_ms)))return;
+ ohlcvLatest=candle;renderOhlcvAlert();
+}
+let basisCurrentDay=null,basisLastFetch=0;
+function renderBasisChart(day,points){
+ const start=Date.parse(day+'T09:00:00+07:00'),end=Date.parse(day+'T14:45:00+07:00');
+ const x=ms=>40+(ms-start)/(end-start)*870;
+ const futures=[];
+ for(const row of points||[]){
+  if(!Array.isArray(row)||row.length!==3||!Number.isFinite(row[0])||
+     !Number.isFinite(row[2])||row[1]!=='market'||row[0]<start||row[0]>end)continue;
+  futures.push([row[0],row[2]]);
+ }
+ futures.sort((a,b)=>a[0]-b[0]);
+ const values=futures.map(row=>row[1]);
+ const bound=Math.max(5,Math.ceil(Math.max(0,...values.map(Math.abs))*1.15));
+ const zero=171,scale=145/bound,y=value=>zero-value*scale;
+ const parts=['<rect width="1000" height="370" fill="#050505"/>'];
+ for(const value of [bound,bound/2,-bound/2,-bound]){
+  const yy=y(value);
+  parts.push(`<line class="grid" x1="40" y1="${yy}" x2="910" y2="${yy}"/>`);
+  parts.push(`<text class="tick" x="930" y="${yy+4}">${Number(value.toFixed(1))}</text>`);
+ }
+ const positive=[],negative=[];
+ const fill=(target,x0,v0,x1,v1)=>target.push(
+  `M ${x0.toFixed(2)} ${zero} L ${x0.toFixed(2)} ${y(v0).toFixed(2)} `+
+  `L ${x1.toFixed(2)} ${y(v1).toFixed(2)} L ${x1.toFixed(2)} ${zero} Z`);
+ for(let i=1;i<futures.length;i++){
+  const [leftTime,leftValue]=futures[i-1],[rightTime,rightValue]=futures[i];
+  if(rightTime-leftTime>30000)continue;
+  const left=x(leftTime),right=x(rightTime);
+  if(leftValue*rightValue<0){
+   const crossing=left+(right-left)*Math.abs(leftValue)/(Math.abs(leftValue)+Math.abs(rightValue));
+   fill(leftValue>0?positive:negative,left,leftValue,crossing,0);
+   fill(rightValue>0?positive:negative,crossing,0,right,rightValue);
+  }else if(leftValue||rightValue){
+   fill(leftValue+rightValue>=0?positive:negative,left,leftValue,right,rightValue);
+  }
+ }
+ if(positive.length)parts.push(`<path class="positive" d="${positive.join(' ')}"/>`);
+ if(negative.length)parts.push(`<path class="negative" d="${negative.join(' ')}"/>`);
+ parts.push(`<line class="vn30-baseline" x1="40" y1="${zero}" x2="910" y2="${zero}"/>`);
+ parts.push(`<text class="tick" x="930" y="${zero+4}">0</text>`);
+ for(const label of ['09:00','10:00','11:00','11:30','13:00','14:00','14:45']){
+  const [hour,minute]=label.split(':').map(Number),at=start+(hour*60+minute-540)*60000,xx=x(at);
+  parts.push(`<text class="tick" x="${xx}" y="350" text-anchor="middle">${label}</text>`);
+ }
+ parts.push('<line class="axis" x1="40" y1="330" x2="910" y2="330"/>');
+ if(futures.length){
+  const [ms,value]=futures.at(-1);
+  parts.push(`<circle class="point ${value>=0?'positive':'negative'}" cx="${x(ms).toFixed(2)}" cy="${y(value).toFixed(2)}" r="3"/>`);
+ }
+ $('basis-chart').innerHTML=parts.join('');
+ set('basis-latest',`Phái sinh lệch VN30 cuối mốc đã thu: ${futures.length?indexSigned(futures.at(-1)[1]):'—'} điểm`);
+ set('basis-status',values.length?`${values.length.toLocaleString('vi-VN')} điểm · ${day}`:`Chưa có điểm basis từ 09:00 · ${day}`);
+}
+function loadBasisHistory(force=false){
+ const day=$('basis-day').value;
+ if(!day||typeof fetch!=='function')return;
+ if(!force&&Date.now()-basisLastFetch<3000)return;
+ basisLastFetch=Date.now();
+ fetch(`/api/basis-history?day=${encodeURIComponent(day)}&bucket=5`,{cache:'no-store'})
+  .then(response=>{if(!response.ok)throw Error('Basis history unavailable');return response.json();})
+  .then(data=>{if($('basis-day').value===data.day)renderBasisChart(data.day,data.points);})
+  .catch(()=>{if($('basis-day').value===day)set('basis-status','Không tải được lịch sử basis');});
+}
+function setBasisCurrentDay(day){
+ const input=$('basis-day'),followCurrent=!input.value||input.value===basisCurrentDay;
+ basisCurrentDay=day;
+ if(followCurrent){input.value=day;loadBasisHistory(true);}
+}
+$('basis-day').onchange=()=>loadBasisHistory(true);
+if(typeof setInterval==='function')setInterval(()=>{
+ if($('basis-day').value===basisCurrentDay)loadBasisHistory(true);
+},5000);
+function renderBreadthChart(){
+ for(const [kind,snapshot] of [['market',indexMarket],['estimated',indexEstimated]]){
+  const counts=[snapshot?.up,snapshot?.down,snapshot?.flat];
+  const valid=counts.every(value=>Number.isSafeInteger(value)&&value>=0);
+  const total=valid?counts.reduce((sum,value)=>sum+value,0):0;
+  set(`breadth-${kind}-time`,snapshot?
+   `Nguồn: ${indexClock(snapshot.source_ms)} · nhận: ${indexClock(snapshot.received_ms)}${valid?` · tổng ${sourceNumber(total,0)} mã`:''}`:
+   'Đang chờ dữ liệu…');
+  $(`breadth-${kind}-bar`).innerHTML=total>0?
+   counts.map((value,i)=>`<span class="breadth-segment ${['up','down','flat'][i]}" style="width:${value/total*100}%" title="${['Tăng','Giảm','Đứng giá'][i]}: ${value}"></span>`).join(''):
+   '<span class="breadth-empty">Chưa có số liệu độ rộng thị trường</span>';
+  $(`breadth-${kind}-counts`).innerHTML=valid?
+   counts.map((value,i)=>`<span class="${['up','down','flat'][i]}">${['Tăng','Giảm','Đứng giá'][i]}: ${sourceNumber(value,0)}</span>`).join(''):
+   '<span class="muted">Tăng: — · Giảm: — · Đứng giá: —</span>';
+ }
+}
 function renderIndexBox(){
  set('index-status',indexStatus==='connected'?(indexMarket&&indexEstimated?'DNSE · ĐANG NHẬN':
   indexMarket?'CHỜ VN30 DỰ TÍNH':indexEstimated?'CHỜ VN30 CHÍNH THỨC':'CHỜ DỮ LIỆU VN30'):
@@ -524,6 +693,7 @@ function renderIndexBox(){
  set('index-future-time',`Giờ khớp cuối: ${indexClock(lastTradeSourceMs)}`);
  set('index-basis-market',!basisReady||!indexMarket?'—':indexSigned(future-indexMarket.value));
  set('index-basis-estimated',!basisReady||!indexEstimated?'—':indexSigned(future-indexEstimated.value));
+ renderBreadthChart();
 }
 function useIndexSnapshot(snapshot){
  if(!snapshot||!['market','estimated'].includes(snapshot.kind)||
@@ -543,13 +713,14 @@ function connectIndex(){
   let data;try{data=JSON.parse(message.data);}catch{return;}
   if(data.type==='hello'){
    if(data.day!==indexDay){indexDay=data.day;indexMarket=null;indexEstimated=null;}
+   setBasisCurrentDay(data.day);
    indexStatus=data.status;useIndexSnapshot(data.market);useIndexSnapshot(data.estimated);
    renderIndexBox();return;
   }
   if(data.type==='events'){
    let changed=false;
    for(const snapshot of data.events||[])changed=useIndexSnapshot(snapshot)||changed;
-   if(changed)renderIndexBox();
+   if(changed){renderIndexBox();loadBasisHistory();}
   }
   if(data.type==='heartbeat'){indexStatus=data.status;renderIndexBox();}
  };
@@ -654,6 +825,7 @@ function connect(){
    const nextSession=data.symbol+':'+data.day;
    const newSession=sessionKey!==nextSession;
    rawDay=data.day;
+   setBasisCurrentDay(data.day);
    paintGeneration++;paintQueued=false;pendingBook=null;pendingPeaks=false;pendingTrade=false;
    sessionKey=nextSession;peakBids.clear();peakAsks.clear();lastBids.clear();lastAsks.clear();
    for(const [p,q,at] of data.max_bids||[])peakBids.set(p,{qty:q,at});
@@ -661,6 +833,8 @@ function connect(){
    for(const [p,q,at] of data.last_bids||[])lastBids.set(p,{qty:q,at});
    for(const [p,q,at] of data.last_asks||[])lastAsks.set(p,{qty:q,at});
    lastTradePrice=data.last_price;lastTradeSourceMs=data.last_price_source_ms??null;
+   referencePrice=data.reference_price??null;
+   ohlcvLatest=null;useOhlcv(data.ohlcv_latest);if(!ohlcvLatest)renderOhlcvAlert();
    lastEventSource=data.book_source_ms;
    set('index-future-symbol',`${data.symbol} · khớp cuối`);renderIndexBox();
    recordBook(...data.book);drawBook(...data.book);renderMaxHistory();
@@ -672,14 +846,18 @@ function connect(){
   }
   if(data.type==='heartbeat'){set('status',data.status.toUpperCase()+' · WS ĐÃ KẾT NỐI');return;}
   if(data.type!=='events')return;
-  let quotes=0,trades=0,latestQuote=null,latestTrade=null,latestStats=null,latestStatsSource=lastTradeStatsSource,firstReceived=Infinity,lastReceived=-Infinity,peaksChanged=false;
+  let quotes=0,trades=0,latestQuote=null,latestTrade=null,latestStats=null,latestStatsSource=lastTradeStatsSource,firstReceived=Infinity,lastReceived=-Infinity,peaksChanged=false,referenceChanged=false;
   for(const event of data.events){
    firstReceived=Math.min(firstReceived,event.received_ms);lastReceived=Math.max(lastReceived,event.received_ms);
    if(event.kind==='quote'){
     quotes++;quoteCount++;latestQuote=event;lastEventSource=event.source_ms;peaksChanged=recordBook(event.bids,event.asks)||peaksChanged;
     if(lastQuoteReceived===event.received_ms)burst++;
     else{if(lastQuoteReceived!=null)set('quote-gap',fmtMs(event.received_ms-lastQuoteReceived));burst=1;lastQuoteReceived=event.received_ms;}
-   }else{
+   }else if(event.kind==='reference'){
+    referencePrice=event.price;referenceChanged=true;
+   }else if(event.kind==='ohlcv'){
+    useOhlcv(event.candle);
+   }else if(event.kind==='trade'){
     trades++;tradeCount++;latestTrade=event;
     if(event.trade_stats&&event.source_ms>=latestStatsSource){
      latestStats=event.trade_stats;latestStatsSource=event.source_ms;
@@ -689,7 +867,8 @@ function connect(){
   if(latestStats){renderTradeStats(latestStats);lastTradeStatsSource=latestStatsSource;}
   if(latestTrade){lastTradePrice=latestTrade.price;lastTradeSourceMs=latestTrade.source_ms;
    set('last-price',price(latestTrade.price));set('last-qty',latestTrade.qty.toLocaleString('vi-VN'));
-   set('last-side',latestTrade.side);set('trade-source',clock(latestTrade.source_ms));renderIndexBox();}
+   set('last-side',latestTrade.side);set('trade-source',clock(latestTrade.source_ms));renderIndexBox();renderPriceChange();loadBasisHistory();}
+  else if(referenceChanged)renderPriceChange();
   if(latestQuote){
    set('quote-source',clock(latestQuote.source_ms));set('quote-received',clock(latestQuote.received_ms));
    set('quote-sent',clock(data.sent_ms));set('quote-browser',clock(browserMs));

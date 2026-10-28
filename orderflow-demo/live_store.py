@@ -7,10 +7,12 @@ import hashlib
 import bisect
 import json
 import math
+import os
 import queue
 import re
 import sqlite3
 import threading
+import tempfile
 import time
 import zlib
 from datetime import datetime
@@ -18,6 +20,54 @@ from pathlib import Path
 
 import msgpack
 from replay_server import Replay, TZ, ticks, record_book_history
+
+
+BACKUP_TABLES = ('metadata', 'gaps', 'index_influence',
+                 'market_index_latest', 'market_index_history', 'basis_history')
+
+
+def backup_non_market(source_path, backup_path):
+    """Atomically archive non-Quote/Trade tables before deleting a daily store."""
+    source_path, backup_path = Path(source_path), Path(backup_path)
+    backup_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=backup_path.name+'.', suffix='.tmp',
+                                     dir=backup_path.parent)
+    os.close(fd)
+    try:
+        # A stale WAL may need SQLite recovery before the old database can be read.
+        with sqlite3.connect(source_path) as source:
+            with sqlite3.connect(temp_name) as backup:
+                for table in BACKUP_TABLES:
+                    schema = source.execute(
+                        "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+                        (table,)).fetchone()
+                    if schema is None:  # Older sessions have no index history table.
+                        continue
+                    backup.execute(schema[0])
+                    rows = source.execute('SELECT * FROM '+table)
+                    columns = len(rows.description)
+                    insert = 'INSERT INTO '+table+' VALUES ('+','.join('?'*columns)+')'
+                    while chunk := rows.fetchmany(1000):
+                        backup.executemany(insert, chunk)
+                backup.commit()
+        os.replace(temp_name, backup_path)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+
+
+def basis_history_from_connection(conn, day, symbol, bucket_seconds=5):
+    if bucket_seconds not in (1,5,15,60):
+        raise ValueError('Invalid basis interval')
+    if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='basis_history'").fetchone() is None:
+        return {'day':day,'symbol':symbol,'bucket_seconds':bucket_seconds,'points':[]}
+    rows=conn.execute('''SELECT b.received_ms,b.kind,b.basis FROM basis_history b
+        JOIN (SELECT kind,MAX(second) AS second FROM basis_history
+              GROUP BY kind,second / ?) picked
+          ON picked.kind=b.kind AND picked.second=b.second
+        ORDER BY b.received_ms,b.kind''',(bucket_seconds,)).fetchall()
+    return {'day':day,'symbol':symbol,'bucket_seconds':bucket_seconds,
+            'points':[[received,kind,basis] for received,kind,basis in rows]}
 
 
 def pack(data):
@@ -164,6 +214,47 @@ def normalize_market_index(obj, kind, day):
             'amount':finite(getattr(obj,'grossTradeAmount',None))}
 
 
+def normalize_reference_price(obj, symbol):
+    if obj.symbol != symbol or obj.boardId != 'G1':
+        raise ValueError('Unexpected security definition')
+    price=optional_number(getattr(obj,'basicPrice',None),positive=True)
+    received=round((obj.receivedAt or time.time())*1000)
+    if price is None:
+        raise ValueError('Invalid reference price')
+    return price,received
+
+
+def normalize_ohlcv_1m(obj, symbol, day, closed=False):
+    """Normalize DNSE's live/closed one-minute candle without inferring missing bars."""
+    if obj.symbol!=symbol or str(obj.resolution)!='1':
+        raise ValueError('Unexpected OHLC symbol or resolution')
+    def epoch_ms(value):
+        number=float(value)
+        if not math.isfinite(number):
+            raise ValueError('Invalid OHLC timestamp')
+        if 10**9<=number<10**11:
+            return round(number*1000)
+        if 10**12<=number<10**14:
+            return round(number)
+        raise ValueError('Invalid OHLC timestamp')
+    source_ms=epoch_ms(obj.time)
+    minute_ms=source_ms//60000*60000
+    if datetime.fromtimestamp(minute_ms/1000,TZ).date().isoformat()!=day:
+        raise ValueError('Unexpected OHLC day')
+    received_ms=round((obj.receivedAt or time.time())*1000)
+    updated_ms=epoch_ms(obj.lastUpdated) if obj.lastUpdated is not None else received_ms
+    values=[float(getattr(obj,name)) for name in ('open','high','low','close')]
+    if not all(math.isfinite(value) and value>0 for value in values):
+        raise ValueError('Invalid OHLC price')
+    opening,high,low,closing=values
+    if low>min(opening,closing) or high<max(opening,closing) or high<low:
+        raise ValueError('Inconsistent OHLC prices')
+    volume=integer(obj.volume)
+    return {'minute_ms':minute_ms,'updated_ms':updated_ms,'received_ms':received_ms,
+            'open':opening,'high':high,'low':low,'close':closing,'volume':volume,
+            'closed':bool(closed)}
+
+
 class LiveReplay(Replay):
     decode_payload = staticmethod(unpack)
 
@@ -268,10 +359,32 @@ class LiveStore:
           second INTEGER PRIMARY KEY,received_ms INTEGER NOT NULL,payload BLOB NOT NULL);
         CREATE TABLE IF NOT EXISTS market_index_latest(
           kind TEXT PRIMARY KEY,source_ms INTEGER,received_ms INTEGER NOT NULL,payload BLOB NOT NULL);
+        CREATE TABLE IF NOT EXISTS market_index_history(
+          id INTEGER PRIMARY KEY,kind TEXT NOT NULL,source_ms INTEGER,
+          received_ms INTEGER NOT NULL,payload BLOB NOT NULL);
+        CREATE INDEX IF NOT EXISTS market_index_history_time
+          ON market_index_history(kind,source_ms,received_ms);
+        CREATE TABLE IF NOT EXISTS basis_history(
+          second INTEGER NOT NULL,kind TEXT NOT NULL,received_ms INTEGER NOT NULL,
+          basis REAL NOT NULL,
+          PRIMARY KEY(second,kind));
+        CREATE TABLE IF NOT EXISTS ohlcv_1m(
+          minute_ms INTEGER PRIMARY KEY,updated_ms INTEGER NOT NULL,received_ms INTEGER NOT NULL,
+          open REAL NOT NULL,high REAL NOT NULL,low REAL NOT NULL,close REAL NOT NULL,
+          volume INTEGER NOT NULL,closed INTEGER NOT NULL);
         ''')
-        row = self.conn.execute("SELECT value FROM metadata WHERE key='stats'").fetchone()
+        meta_row = self.conn.execute("SELECT value FROM metadata WHERE key='stats'").fetchone()
+        reference_row=self.conn.execute(
+            "SELECT value FROM metadata WHERE key='reference_price'").fetchone()
+        self.reference_price=json.loads(reference_row[0]) if reference_row else None
+        self.ohlcv_1m={}
+        for row in self.conn.execute('SELECT minute_ms,updated_ms,received_ms,open,high,low,close,volume,closed FROM ohlcv_1m'):
+            candle=dict(zip(('minute_ms','updated_ms','received_ms','open','high','low','close','volume','closed'),row))
+            candle['closed']=bool(candle['closed'])
+            self.ohlcv_1m[row[0]]=candle
+        self.ohlcv_invalid=0
         base = round(datetime.fromisoformat(day).replace(tzinfo=TZ).timestamp()*1000)
-        self.persisted_meta = json.loads(row[0]) if row else dict(symbol=symbol,day=day,base_ms=base,
+        self.persisted_meta = json.loads(meta_row[0]) if meta_row else dict(symbol=symbol,day=day,base_ms=base,
                     start_ms=base,end_ms=base,duration=0,quotes=0,trades=0,tape_volume=0,
                     duplicates=0,ordering='SOURCE_TIME; equal timestamp: Quote then arrival order',
                     source='DNSE SDK WSS', storage='SQLite WAL / MessagePack ticks',live=True)
@@ -363,10 +476,14 @@ class LiveStore:
                 self.failed = True
                 self.connection('error','Capture queue full; recording stopped')
                 raise RuntimeError('Capture queue full')
+            prior_trade=self.live_engine.last_trade_key
             self.sequence += 1
             data=self._project(event,self.sequence)
             if data is not None:
                 ts,kind,received=event[:3]
+                if kind==1 and self.live_engine.last_trade_key!=prior_trade:
+                    for index_kind in ('market','estimated'):
+                        self._queue_basis(index_kind,received)
                 self.raw_sequence += 1
                 raw={'seq':self.raw_sequence,'kind':'quote' if kind==0 else 'trade',
                      'source_ms':ts,'received_ms':received,
@@ -433,10 +550,114 @@ class LiveStore:
                 self.connection('error','Capture queue full; recording stopped')
                 raise RuntimeError('Capture queue full')
             self.index_latest[kind]=snapshot
+            self._queue_basis(kind,snapshot['received_ms'])
             self.index_sequence+=1
             self.index_events[self.index_sequence % len(self.index_events)] = {
                 'seq':self.index_sequence,**snapshot}
             self.changed.notify_all()
+
+    def set_reference_price(self, price, received):
+        if not math.isfinite(price) or price<=0:
+            raise ValueError('Invalid reference price')
+        with self.db_lock:
+            self.conn.execute("INSERT OR REPLACE INTO metadata VALUES ('reference_price',?)",
+                              (json.dumps(price),))
+            self.conn.commit()
+        with self.lock:
+            if self.stop.is_set():
+                return
+            self.reference_price=price
+            self.raw_sequence+=1
+            raw={'seq':self.raw_sequence,'kind':'reference','source_ms':received,
+                 'received_ms':received,'price':price}
+            self.raw_events[self.raw_sequence % len(self.raw_events)]=raw
+            self.changed.notify_all()
+
+    @staticmethod
+    def ohlcv_key(candle):
+        return (bool(candle['closed']),candle['updated_ms'],candle['received_ms'])
+
+    def enqueue_ohlcv(self, candle):
+        with self.lock:
+            if self.stop.is_set():
+                return
+            minute=candle['minute_ms']
+            old=self.ohlcv_1m.get(minute)
+            if old and self.ohlcv_key(old)>self.ohlcv_key(candle):
+                return
+            try:
+                self.queue.put_nowait(('ohlcv',candle))
+            except queue.Full:
+                self.failed=True
+                self.connection('error','Capture queue full; recording stopped')
+                raise RuntimeError('Capture queue full')
+            self.ohlcv_1m[minute]=candle
+            self.raw_sequence+=1
+            raw={'seq':self.raw_sequence,'kind':'ohlcv',
+                 'source_ms':minute,'received_ms':candle['received_ms'],
+                 'candle':dict(candle)}
+            self.raw_events[self.raw_sequence % len(self.raw_events)]=raw
+            self.changed.notify_all()
+
+    def write_ohlcv(self, candles):
+        with self.db_lock:
+            try:
+                self.conn.executemany('''INSERT INTO ohlcv_1m
+                    (minute_ms,updated_ms,received_ms,open,high,low,close,volume,closed)
+                    VALUES (:minute_ms,:updated_ms,:received_ms,:open,:high,:low,:close,:volume,:closed)
+                    ON CONFLICT(minute_ms) DO UPDATE SET
+                    updated_ms=excluded.updated_ms,received_ms=excluded.received_ms,
+                    open=excluded.open,high=excluded.high,low=excluded.low,
+                    close=excluded.close,volume=excluded.volume,closed=excluded.closed
+                    WHERE excluded.closed>ohlcv_1m.closed OR
+                    (excluded.closed=ohlcv_1m.closed AND
+                     (excluded.updated_ms>ohlcv_1m.updated_ms OR
+                      (excluded.updated_ms=ohlcv_1m.updated_ms AND
+                       excluded.received_ms>=ohlcv_1m.received_ms)))''',candles)
+                self.conn.commit()
+            except Exception:
+                self.conn.rollback()
+                raise
+
+    def ohlcv_history(self):
+        with self.lock:
+            return {'day':self.day,'symbol':self.symbol,'resolution':'1m',
+                    'candles':[dict(self.ohlcv_1m[minute]) for minute in sorted(self.ohlcv_1m)],
+                    'invalid':self.ohlcv_invalid}
+
+    def _queue_basis(self, kind, received):
+        """Sample the latest futures/index pair at most once per second and kind."""
+        index=self.index_latest.get(kind)
+        future=self.live_engine.last_price
+        if index is None or future is None:
+            return
+        local=datetime.fromtimestamp(received/1000,TZ)
+        if local.date().isoformat()!=self.day or local.hour<9:
+            return
+        sample=(received//1000,kind,received,future/10-index['value'])
+        try:
+            self.queue.put_nowait(('basis',sample))
+        except queue.Full:
+            self.failed=True
+            self.connection('error','Capture queue full; recording stopped')
+            raise RuntimeError('Capture queue full')
+
+    def write_basis(self, samples):
+        with self.db_lock:
+            try:
+                self.conn.executemany('''INSERT INTO basis_history
+                    (second,kind,received_ms,basis)
+                    VALUES (?,?,?,?) ON CONFLICT(second,kind) DO UPDATE SET
+                    received_ms=excluded.received_ms,basis=excluded.basis
+                    WHERE excluded.received_ms>=basis_history.received_ms''',samples)
+                self.conn.commit()
+            except Exception:
+                self.conn.rollback()
+                raise
+
+    def basis_history(self, bucket_seconds=5):
+        with self.db_lock:
+            return basis_history_from_connection(self.conn,self.day,self.symbol,bucket_seconds)
 
     def index_initial(self):
         with self.lock:
@@ -464,6 +685,9 @@ class LiveStore:
                                           (snapshot['kind'],)).fetchone()
                     if old and self.index_key(unpack(old[0]))>self.index_key(snapshot):
                         continue
+                    self.conn.execute('''INSERT INTO market_index_history
+                        (kind,source_ms,received_ms,payload) VALUES (?,?,?,?)''',
+                        (snapshot['kind'],snapshot['source_ms'],snapshot['received_ms'],pack(snapshot)))
                     self.conn.execute('''INSERT INTO market_index_latest(kind,source_ms,received_ms,payload)
                         VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET
                         source_ms=excluded.source_ms,received_ms=excluded.received_ms,
@@ -538,6 +762,8 @@ class LiveStore:
     def raw_initial(self):
         with self.lock:
             return {'day':self.day,'symbol':self.symbol,'status':self.status,
+                    'reference_price':self.reference_price,
+                    'ohlcv_latest':dict(self.ohlcv_1m[max(self.ohlcv_1m)]) if self.ohlcv_1m else None,
                     'cursor':self.raw_sequence,'quotes':self.meta['quotes'],
                     'trades':self.meta['trades'],'book':self.live_engine.book,
                     'book_source_ms':self.live_engine.book_ts,
@@ -641,15 +867,21 @@ class LiveStore:
                         batch.append(self.queue.get(timeout=max(0,deadline-time.monotonic())))
                     except queue.Empty:
                         break
-                market=[event for event in batch if event[0] not in ('influence','index')]
+                market=[event for event in batch if event[0] not in ('influence','index','basis','ohlcv')]
                 influence=[event[1] for event in batch if event[0]=='influence']
                 indexes=[event[1] for event in batch if event[0]=='index']
+                basis=[event[1] for event in batch if event[0]=='basis']
+                candles=[event[1] for event in batch if event[0]=='ohlcv']
                 if market:
                     self.write(market,queued=True)
                 if influence:
                     self.write_influence(influence)
                 if indexes:
                     self.write_index(indexes)
+                if basis:
+                    self.write_basis(basis)
+                if candles:
+                    self.write_ohlcv(candles)
                 for _ in batch:
                     self.queue.task_done()
         except Exception as exc:

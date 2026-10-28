@@ -2,6 +2,7 @@
 import io
 import asyncio
 import json
+import sqlite3
 from pathlib import Path
 import tempfile
 import threading
@@ -9,7 +10,7 @@ from types import SimpleNamespace as Obj
 import unittest
 from unittest.mock import patch
 
-from live_store import LiveStore, normalize, normalize_influence, normalize_market_index, unpack
+from live_store import LiveStore, normalize, normalize_influence, normalize_market_index, normalize_reference_price, normalize_ohlcv_1m, unpack
 from live_server import Handler, Runtime, collect
 
 DAY='2026-10-19'
@@ -73,6 +74,44 @@ class StoreTest(unittest.TestCase):
         self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
         self.assertEqual(self.store.raw_initial()['trade_stats'],latest)
         self.assertEqual(self.store.raw_initial()['trade_stats_source_ms'],event(1,1)[0])
+
+    def test_reference_price_restores_and_rejects_wrong_symbol(self):
+        obj=Obj(symbol=SYMBOL,boardId='G1',basicPrice=1795.0,receivedAt=1792375200)
+        price,received=normalize_reference_price(obj,SYMBOL)
+        self.store.set_reference_price(price,received)
+        self.assertEqual(self.store.raw_initial()['reference_price'],1795.0)
+        self.assertEqual(self.store.raw_since(0)[0][0]['kind'],'reference')
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.raw_initial()['reference_price'],1795.0)
+        with self.assertRaises(ValueError):
+            normalize_reference_price(Obj(symbol='OTHER',boardId='G1',basicPrice=1795,
+                                          receivedAt=1792375200),SYMBOL)
+
+    def test_ohlcv_1m_open_close_and_restart(self):
+        source=Obj(symbol=SYMBOL,resolution='1',time=1792375200,lastUpdated=1792375220,
+                   receivedAt=1792375220,open=1800,high=1801,low=1799.5,
+                   close=1800.5,volume=12)
+        live=normalize_ohlcv_1m(source,SYMBOL,DAY)
+        self.store.enqueue_ohlcv(live)
+        self.assertFalse(self.store.ohlcv_history()['candles'][0]['closed'])
+        source.lastUpdated=1792375260;source.receivedAt=1792375260
+        source.close=1800.7;source.volume=20
+        closed=normalize_ohlcv_1m(source,SYMBOL,DAY,closed=True)
+        self.store.enqueue_ohlcv(closed)
+        self.store.enqueue_ohlcv(live)  # a delayed live update must not reopen the bar
+        self.assertEqual(self.store.raw_initial()['ohlcv_latest'],closed)
+        self.assertEqual([item['kind'] for item in self.store.raw_since(0)[0]],
+                         ['ohlcv','ohlcv'])
+        self.store.stop.set()
+        worker=threading.Thread(target=self.store.writer);worker.start();worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(self.store.ohlcv_history()['candles'],[closed])
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.ohlcv_history()['candles'][0]['close'],1800.7)
+        self.assertTrue(self.store.ohlcv_history()['candles'][0]['closed'])
+        self.assertEqual(self.store.raw_initial()['ohlcv_latest'],closed)
+        with self.assertRaises(ValueError):
+            normalize_ohlcv_1m(Obj(**{**vars(source),'resolution':'5'}),SYMBOL,DAY)
 
     def test_vn30_influence_realtime_and_persisted_history(self):
         received=1792375200.1
@@ -143,12 +182,32 @@ class StoreTest(unittest.TestCase):
         self.store.stop.set()
         worker=threading.Thread(target=self.store.writer);worker.start();worker.join(2)
         self.assertFalse(worker.is_alive())
+        self.assertEqual(self.store.conn.execute(
+            'SELECT count(*) FROM market_index_history').fetchone()[0],2)
         self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
         self.assertEqual(self.store.index_initial()['market'],official)
         self.assertEqual(self.store.index_initial()['estimated'],estimate)
         with self.assertRaises(ValueError):
             normalize_market_index(Obj(indexName='VNINDEX',receivedAt=received,
                                        valueIndexes=1800),'market',DAY)
+
+    def test_basis_history_uses_09_session_and_persists_after_restart(self):
+        index={'kind':'market','source_ms':event(1)[0],
+               'received_ms':event(1)[2],'value':1790.0}
+        self.store.enqueue_index(index)
+        self.store.enqueue(event(1))
+        self.store.enqueue_index({**index,'source_ms':index['source_ms']+1000,
+                                  'received_ms':index['received_ms']+1000,'value':1791.0})
+        self.store.stop.set()
+        worker=threading.Thread(target=self.store.writer);worker.start();worker.join(2)
+        self.assertFalse(worker.is_alive())
+        rows=self.store.basis_history(1)['points']
+        self.assertEqual(len(rows),2)
+        self.assertAlmostEqual(rows[0][2],10.1)
+        self.assertAlmostEqual(rows[1][2],9.1)
+        self.assertEqual(len(self.store.basis_history(5)['points']),1)
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.basis_history(1)['points'],rows)
 
     def test_rewind_and_late_event_no_future_peaks_or_trades(self):
         self.store.write([event(0),event(1),event(1,2,80,'SELL',140,1800.2)])
@@ -338,6 +397,16 @@ def websocket_messages(response):
 
 
 class RetentionTest(unittest.TestCase):
+    def test_backup_failure_keeps_old_live_database(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)/'live'
+            old=LiveStore(root,SYMBOL,'2026-10-18');old.close()
+            runtime=Runtime(root,SYMBOL,DAY)
+            with patch('live_server.backup_non_market',side_effect=OSError('disk full')):
+                with self.assertRaises(OSError):
+                    runtime.store()
+            self.assertTrue((root/SYMBOL/'2026-10-18.sqlite').exists())
+
     def test_startup_removes_old_live_files_preserves_current_and_other_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)/'live'
@@ -360,9 +429,19 @@ class RetentionTest(unittest.TestCase):
 
     def test_rollover_closes_old_store_and_removes_database_and_sidecars(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime=Runtime(tmp,SYMBOL,DAY)
+            runtime=Runtime(Path(tmp)/'live',SYMBOL,DAY)
             try:
                 old=runtime.store();old.enqueue(event(1))
+                old.enqueue_ohlcv(normalize_ohlcv_1m(Obj(
+                    symbol=SYMBOL,resolution='1',time=1792375200,lastUpdated=1792375220,
+                    receivedAt=1792375220,open=1800,high=1801,low=1799,
+                    close=1800.5,volume=12),SYMBOL,DAY))
+                index={'kind':'estimated','source_ms':1792375200000,
+                       'received_ms':1792375200100,'value':1795.0}
+                old.enqueue_index(index)
+                old.enqueue_index({**index,'source_ms':1792375201000,
+                                   'received_ms':1792375201100,'value':1795.5})
+                old.enqueue_influence({'received_ms':1792375201200,'items':[['VCB',1.25]]})
                 runtime.day='2026-10-20'
                 current=runtime.store()
                 self.assertTrue(old.retired)
@@ -370,6 +449,19 @@ class RetentionTest(unittest.TestCase):
                 self.assertFalse(list((Path(tmp)/SYMBOL).glob(DAY+'.sqlite*')))
                 self.assertEqual(current.info()['trades'],0)
                 self.assertEqual(list(runtime.stores),['2026-10-20'])
+                archive=Path(tmp)/'live-backup'/SYMBOL/(DAY+'.sqlite')
+                with sqlite3.connect(archive) as saved:
+                    self.assertEqual(saved.execute(
+                        'SELECT count(*) FROM market_index_history').fetchone()[0],2)
+                    self.assertEqual(saved.execute(
+                        'SELECT count(*) FROM index_influence').fetchone()[0],1)
+                    self.assertGreater(saved.execute(
+                        'SELECT count(*) FROM basis_history').fetchone()[0],0)
+                    self.assertIsNone(saved.execute(
+                        "SELECT name FROM sqlite_master WHERE name='events'").fetchone())
+                    self.assertIsNone(saved.execute(
+                        "SELECT name FROM sqlite_master WHERE name='ohlcv_1m'").fetchone())
+                self.assertTrue(runtime.basis_history(DAY,1)['points'])
                 with self.assertRaises(ValueError):old.snapshot()
             finally:
                 runtime.close()
@@ -397,6 +489,13 @@ class HttpTest(unittest.TestCase):
         self.assertIn(b'404',self.request('/../.env').split(b'\r\n',1)[0])
         self.assertIn(b'200',self.request('/orderflow-live.html').split(b'\r\n',1)[0])
         self.assertIn(b'200',self.request('/dom-latency.html').split(b'\r\n',1)[0])
+    def test_ohlcv_api_exposes_current_session_cache(self):
+        candle=normalize_ohlcv_1m(Obj(symbol=SYMBOL,resolution='1',time=1792375200,
+            lastUpdated=1792375220,receivedAt=1792375220,open=1800,high=1801,
+            low=1799,close=1800.5,volume=12),SYMBOL,DAY)
+        self.runtime.store().enqueue_ohlcv(candle)
+        response=self.request('/api/ohlcv-1m')
+        self.assertEqual(json.loads(response.split(b'\r\n\r\n',1)[1])['candles'],[candle])
     def test_websocket_upgrade_pushes_snapshot(self):
         def sent(data):
             if data.startswith(b'\x81'):self.runtime.stop.set()
@@ -585,6 +684,16 @@ class CollectorTest(unittest.TestCase):
                         base={'T':'mi','indexName':'VN30','valueIndexes':1795.25,
                               'changedValue':5.25,'changedRatio':.29,'priorValueIndexes':1790,
                               'transactTime':{'Seconds':timestamp,'Nanos':123000000}}
+                    elif channel.startswith('security_definition'):
+                        base.update(T='sd',basicPrice=1795.0)
+                    elif channel.startswith('ohlc_closed'):
+                        base=dict(T='bc',symbol=SYMBOL,resolution='1',time=timestamp,
+                                  lastUpdated=timestamp+60,open=1800,high=1801,
+                                  low=1799.5,close=1800.7,volume=20)
+                    elif channel.startswith('ohlc.'):
+                        base=dict(T='b',symbol=SYMBOL,resolution='1',time=timestamp,
+                                  lastUpdated=timestamp+20,open=1800,high=1801,
+                                  low=1799.5,close=1800.5,volume=12)
                     else:
                         base.update(T='q',bid=[dict(price=1800,quantity=20)],offer=[dict(price=1800.1,qtty=30)])
                     await self.queue.put(msgpack.packb(base))
@@ -599,7 +708,10 @@ class CollectorTest(unittest.TestCase):
                     await asyncio.sleep(.05)
                     if (runtime.store().info()['quotes']==1 and runtime.store().info()['trades']==1
                             and runtime.store().index_initial()['market']
-                            and runtime.store().index_initial()['estimated']):
+                            and runtime.store().index_initial()['estimated']
+                            and runtime.store().raw_initial()['reference_price'] is not None
+                            and runtime.store().ohlcv_history()['candles']
+                            and runtime.store().ohlcv_history()['candles'][0]['closed']):
                         break
                 self.assertEqual(runtime.store().info()['trades'],1)
                 self.assertEqual(runtime.store().info()['quotes'],1)
@@ -607,6 +719,8 @@ class CollectorTest(unittest.TestCase):
                                  [['HPG',-.4],['VCB',1.25]])
                 self.assertEqual(runtime.store().index_initial()['market']['value'],1795.25)
                 self.assertEqual(runtime.store().index_initial()['estimated']['value'],1796)
+                self.assertEqual(runtime.store().raw_initial()['reference_price'],1795.0)
+                self.assertEqual(runtime.store().ohlcv_history()['candles'][0]['volume'],20)
                 self.assertEqual(runtime.store().snapshot()['frame']['volume'],60)
                 self.assertEqual(runtime.store().raw_initial()['trade_stats'],{
                     'totalVolumeTraded':60,'grossTradeAmount':108006,
@@ -633,6 +747,8 @@ class CollectorTest(unittest.TestCase):
                 self.assertEqual(channels,['tick_extra.G1.msgpack','top_price.G1.msgpack',
                                            'market_index.VN30.msgpack',
                                            'estimated_market_index.VN30.msgpack',
+                                           'security_definition.G1.msgpack',
+                                           'ohlc.1.msgpack','ohlc_closed.1.msgpack',
                                            'market_index_influence.VN30.1.msgpack'])
             finally:
                 runtime.close()

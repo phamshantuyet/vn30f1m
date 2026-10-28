@@ -16,6 +16,7 @@ from pathlib import Path
 import select
 import signal
 import socket
+import sqlite3
 import ssl
 import struct
 import threading
@@ -23,7 +24,7 @@ import time
 from urllib.parse import parse_qs, urlsplit
 
 from dotenv import load_dotenv
-from live_store import LiveStore, normalize, normalize_influence, normalize_market_index
+from live_store import LiveStore, backup_non_market, basis_history_from_connection, normalize, normalize_influence, normalize_market_index, normalize_reference_price, normalize_ohlcv_1m
 from replay_server import ROOT, TZ
 
 
@@ -66,8 +67,9 @@ class Runtime:
             return self.stores[day]
 
     def prune(self, day):
-        """Only remove this collector's older daily files for the selected symbol."""
+        """Archive non-market data before removing older files for this symbol."""
         datetime.strptime(day,'%Y-%m-%d')
+        by_day={}
         for path in (Path(self.root)/self.symbol).glob('*'):
             match=re.fullmatch(r'(\d{4}-\d{2}-\d{2})\.sqlite(?:-wal|-shm|-journal)?',path.name)
             if match and match[1]<day and path.is_file() and not path.is_symlink():
@@ -75,12 +77,32 @@ class Runtime:
                     datetime.strptime(match[1],'%Y-%m-%d')
                 except ValueError:
                     continue
-                path.unlink()
+                by_day.setdefault(match[1],[]).append(path)
+        for old_day, paths in sorted(by_day.items()):
+            database=Path(self.root)/self.symbol/(old_day+'.sqlite')
+            if database in paths:
+                archive=Path(self.root).parent/(Path(self.root).name+'-backup')/self.symbol/database.name
+                backup_non_market(database,archive)
+            for path in paths:
+                path.unlink(missing_ok=True)
 
     def connection(self,status,error=None):
         with self.lock:
             self.status=status
             self.store().connection(status,error)
+
+    def basis_history(self, day, bucket):
+        current=self.store()
+        if day is None or day==current.day:
+            return current.basis_history(bucket)
+        datetime.strptime(day,'%Y-%m-%d')
+        if day>current.day:
+            raise ValueError('Future day')
+        archive=Path(self.root).parent/(Path(self.root).name+'-backup')/self.symbol/(day+'.sqlite')
+        if not archive.is_file():
+            return {'day':day,'symbol':self.symbol,'bucket_seconds':bucket,'points':[]}
+        with sqlite3.connect(archive.as_uri()+'?mode=ro',uri=True) as conn:
+            return basis_history_from_connection(conn,day,self.symbol,bucket)
 
     def close(self):
         self.stop.set()
@@ -151,17 +173,44 @@ async def collect(runtime, key, secret, url):
                     with store.lock:
                         store.index_invalid+=1
                         store.changed.notify_all()
+            def receive_reference(obj):
+                store=runtime.store()
+                if store.failed:
+                    return
+                try:
+                    price,received=normalize_reference_price(obj,runtime.symbol)
+                    store.set_reference_price(price,received)
+                except (ValueError,TypeError,AttributeError,OverflowError):
+                    with store.lock:
+                        store.invalid+=1
+                        store.changed.notify_all()
+            def receive_ohlcv(closed,obj):
+                store=runtime.store()
+                if store.failed:
+                    return
+                try:
+                    store.enqueue_ohlcv(normalize_ohlcv_1m(obj,runtime.symbol,store.day,closed))
+                except (ValueError,TypeError,AttributeError,OverflowError):
+                    with store.lock:
+                        store.ohlcv_invalid+=1
+                        store.changed.notify_all()
             # Register before SUBSCRIBE so the first pushed records cannot race registration.
             client.on('trade_extra',partial(receive,1))
             client.on('quote',partial(receive,0))
             client.on('market_index_influence',receive_influence)
             client.on('market_index',partial(receive_index,'market'))
             client.on('estimated_market_index',partial(receive_index,'estimated'))
+            client.on('security_definition',receive_reference)
+            client.on('ohlc',partial(receive_ohlcv,False))
+            client.on('ohlc_closed',partial(receive_ohlcv,True))
             await asyncio.wait_for(client.connect(),20)
             await client.subscribe_trade_extra([runtime.symbol],encoding='msgpack',board_id='G1')
             await client.subscribe_quotes([runtime.symbol],encoding='msgpack',board_id='G1')
             await client.subscribe_market_index('VN30',encoding='msgpack')
             await client.subscribe_estimated_market_index('VN30',encoding='msgpack')
+            await client.subscribe_sec_def([runtime.symbol],encoding='msgpack',board_id='G1')
+            await client.subscribe_ohlc([runtime.symbol],resolution='1',encoding='msgpack')
+            await client.subscribe_ohlc_closed([runtime.symbol],resolution='1',encoding='msgpack')
             await client.subscribe_market_index_influence('VN30',resolution=1,encoding='msgpack')
             runtime.connection('connected')
             delay=1
@@ -237,6 +286,11 @@ class Handler(SimpleHTTPRequestHandler):
                 self.json(store.info());return
             if url.path=='/api/influence-history':
                 self.json(store.influence_history(number(q,'bucket',60,True)));return
+            if url.path=='/api/ohlcv-1m':
+                self.json(store.ohlcv_history());return
+            if url.path=='/api/basis-history':
+                self.json(self.runtime.basis_history(q.get('day',[None])[0],
+                        number(q,'bucket',5,True)));return
             if url.path=='/api/ws/influence':
                 self.websocket_influence();return
             if url.path=='/api/ws/index':
