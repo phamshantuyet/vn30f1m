@@ -26,6 +26,8 @@ from urllib.parse import parse_qs, urlsplit
 from dotenv import load_dotenv
 from live_store import LiveStore, backup_non_market, basis_history_from_connection, normalize, normalize_influence, normalize_market_index, normalize_reference_price, normalize_ohlcv_1m
 from replay_server import ROOT, TZ
+from vn30_stocks import (VN30_PERIOD, VN30_SOURCE, VN30_SYMBOLS,
+                         load_vn30_symbols, normalize_vn30_stock)
 
 
 def number(q, name, default, integer=False):
@@ -37,10 +39,14 @@ def number(q, name, default, integer=False):
 
 
 class Runtime:
-    def __init__(self, root, symbol, day=None):
+    def __init__(self, root, symbol, day=None, vn30_symbols=VN30_SYMBOLS,
+                 vn30_source=VN30_SOURCE, vn30_period=VN30_PERIOD):
         if not re.fullmatch(r'[A-Z0-9_-]{1,32}',symbol):
             raise ValueError('Invalid symbol')
         self.root,self.symbol,self.day=root,symbol,day
+        self.vn30_symbols=tuple(vn30_symbols)
+        self.vn30_set=frozenset(self.vn30_symbols)
+        self.vn30_source,self.vn30_period=vn30_source,vn30_period
         self.stores={}
         self.writers={}
         self.lock=threading.RLock()
@@ -59,7 +65,8 @@ class Runtime:
                         self.writers.pop(old_day).join()
                         old.close()
                 self.prune(day)
-                store=LiveStore(self.root,self.symbol,day)
+                store=LiveStore(self.root,self.symbol,day,self.vn30_symbols,
+                                self.vn30_source,self.vn30_period)
                 store.connection(self.status)
                 writer=threading.Thread(target=store.writer,daemon=True)
                 writer.start()
@@ -115,7 +122,40 @@ class Runtime:
                 store.close()
 
 
-async def collect(runtime, key, secret, url):
+def bootstrap_vn30_stocks(runtime, key, secret):
+    """Fill the mid-session stock snapshot before new WSS ticks arrive."""
+    from dnse import DNSEClient
+    client=DNSEClient(key,secret)
+    counts={'reference':0,'trade':0}
+    failures=0
+    for symbol in runtime.vn30_symbols:
+        if runtime.stop.is_set():
+            break
+        for kind,fetch in (('reference',client.get_security_definition),
+                           ('trade',client.get_latest_trade)):
+            if runtime.stop.is_set():
+                break
+            try:
+                status,body=fetch(symbol,board_id='G1')
+                if status!=200:
+                    continue
+                data=json.loads(body)
+                rows=data if kind=='reference' else data.get('trades',[])
+                row=next((row for row in rows if row.get('symbol')==symbol and
+                          row.get('boardId')=='G1'),None)
+                if row is not None:
+                    store=runtime.store()
+                    store.enqueue_vn30_stock(normalize_vn30_stock(
+                        row,kind,store.day,runtime.vn30_set))
+                    counts[kind]+=1
+            except Exception:
+                # WSS remains the live source when an optional REST snapshot fails.
+                failures+=1
+    print(f'VN30 REST snapshot: reference={counts["reference"]}/30 '
+          f'trade={counts["trade"]}/30 failures={failures}',flush=True)
+
+
+async def collect(runtime, key, secret, url, ohlc_symbol_type='VN30F1M'):
     # SDK timestamp parser uses local time; never depend on the host timezone.
     os.environ['TZ']='Asia/Bangkok'
     if hasattr(time,'tzset'):
@@ -184,33 +224,56 @@ async def collect(runtime, key, secret, url):
                     with store.lock:
                         store.invalid+=1
                         store.changed.notify_all()
+            def receive_vn30(kind,obj):
+                store=runtime.store()
+                if store.failed:
+                    return
+                try:
+                    store.enqueue_vn30_stock(normalize_vn30_stock(
+                        obj,kind,store.day,runtime.vn30_set))
+                except (ValueError,TypeError,AttributeError,OverflowError):
+                    with store.lock:
+                        store.vn30_stock_invalid+=1
+                        store.changed.notify_all()
+            def receive_trade_extra(obj):
+                if obj.symbol==runtime.symbol:
+                    receive(1,obj)
+                elif obj.symbol in runtime.vn30_set:
+                    receive_vn30('trade',obj)
+            def receive_security_definition(obj):
+                if obj.symbol==runtime.symbol:
+                    receive_reference(obj)
+                elif obj.symbol in runtime.vn30_set:
+                    receive_vn30('reference',obj)
             def receive_ohlcv(closed,obj):
                 store=runtime.store()
                 if store.failed:
                     return
                 try:
-                    store.enqueue_ohlcv(normalize_ohlcv_1m(obj,runtime.symbol,store.day,closed))
+                    store.enqueue_ohlcv(normalize_ohlcv_1m(
+                        obj,runtime.symbol,store.day,closed,ohlc_symbol_type))
                 except (ValueError,TypeError,AttributeError,OverflowError):
                     with store.lock:
                         store.ohlcv_invalid+=1
                         store.changed.notify_all()
             # Register before SUBSCRIBE so the first pushed records cannot race registration.
-            client.on('trade_extra',partial(receive,1))
+            client.on('trade_extra',receive_trade_extra)
             client.on('quote',partial(receive,0))
             client.on('market_index_influence',receive_influence)
             client.on('market_index',partial(receive_index,'market'))
             client.on('estimated_market_index',partial(receive_index,'estimated'))
-            client.on('security_definition',receive_reference)
+            client.on('security_definition',receive_security_definition)
             client.on('ohlc',partial(receive_ohlcv,False))
             client.on('ohlc_closed',partial(receive_ohlcv,True))
             await asyncio.wait_for(client.connect(),20)
-            await client.subscribe_trade_extra([runtime.symbol],encoding='msgpack',board_id='G1')
+            await client.subscribe_trade_extra([runtime.symbol,*runtime.vn30_symbols],encoding='msgpack',board_id='G1')
             await client.subscribe_quotes([runtime.symbol],encoding='msgpack',board_id='G1')
             await client.subscribe_market_index('VN30',encoding='msgpack')
             await client.subscribe_estimated_market_index('VN30',encoding='msgpack')
-            await client.subscribe_sec_def([runtime.symbol],encoding='msgpack',board_id='G1')
-            await client.subscribe_ohlc([runtime.symbol],resolution='1',encoding='msgpack')
-            await client.subscribe_ohlc_closed([runtime.symbol],resolution='1',encoding='msgpack')
+            await client.subscribe_sec_def([runtime.symbol,*runtime.vn30_symbols],encoding='msgpack',board_id='G1')
+            # Derivative OHLC is keyed by symbolType (VN30F1M), not contract ID.
+            await client.subscribe_ohlc([ohlc_symbol_type],resolution='1',encoding='msgpack')
+            await client.subscribe_ohlc_closed([ohlc_symbol_type],resolution='1',encoding='msgpack')
             await client.subscribe_market_index_influence('VN30',resolution=1,encoding='msgpack')
             runtime.connection('connected')
             delay=1
@@ -288,6 +351,10 @@ class Handler(SimpleHTTPRequestHandler):
                 self.json(store.influence_history(number(q,'bucket',60,True)));return
             if url.path=='/api/ohlcv-1m':
                 self.json(store.ohlcv_history());return
+            if url.path=='/api/vn30-stocks':
+                self.json(store.vn30_stock_snapshot());return
+            if url.path=='/api/trade-speed':
+                self.json(store.trade_speed_history());return
             if url.path=='/api/basis-history':
                 self.json(self.runtime.basis_history(q.get('day',[None])[0],
                         number(q,'bucket',5,True)));return
@@ -521,6 +588,8 @@ def main():
     parser.add_argument('--host',default='127.0.0.1')
     parser.add_argument('--port',type=int,default=8097)
     parser.add_argument('--data-dir',type=Path,default=ROOT.parent/'data'/'live')
+    parser.add_argument('--ohlc-symbol-type',default=os.getenv('DNSE_OHLC_SYMBOL_TYPE','VN30F1M'),
+                        help='DNSE derivative OHLC symbolType (default: VN30F1M)')
     parser.add_argument('--offline',action='store_true',help='Serve persisted data without DNSE connection')
     parser.add_argument('--day',help='Offline day; only the current UTC+7 day is retained')
     parser.add_argument('--tls-cert',type=Path,default=os.getenv('ORDERFLOW_TLS_CERT'),
@@ -528,6 +597,9 @@ def main():
     parser.add_argument('--tls-key',type=Path,default=os.getenv('ORDERFLOW_TLS_KEY'),
                         help='TLS private key for HTTPS/WSS; requires --tls-cert')
     args=parser.parse_args()
+    args.ohlc_symbol_type=args.ohlc_symbol_type.upper()
+    if not re.fullmatch(r'[A-Z0-9_-]{1,32}',args.ohlc_symbol_type):
+        parser.error('Invalid --ohlc-symbol-type')
     if args.day and not args.offline:
         parser.error('--day requires --offline')
     if args.day and args.day!=datetime.now(TZ).date().isoformat():
@@ -537,7 +609,11 @@ def main():
     key,secret=os.getenv('DNSE_API_KEY'),os.getenv('DNSE_API_SECRET')
     if not args.offline and not (key and secret):
         parser.error('Set DNSE_API_KEY and DNSE_API_SECRET in project .env')
-    runtime=Runtime(args.data_dir,args.symbol.upper(),args.day)
+    vn30_symbols,vn30_source,vn30_period=load_vn30_symbols(
+        args.data_dir/'vn30_symbols.json',online=not args.offline)
+    print(f'VN30 constituents: {len(vn30_symbols)} from {vn30_source} ({vn30_period})',flush=True)
+    runtime=Runtime(args.data_dir,args.symbol.upper(),args.day,
+                    vn30_symbols,vn30_source,vn30_period)
     runtime.store()
     try:
         server=ThreadingHTTPServer((args.host,args.port),partial(Handler,runtime=runtime))
@@ -553,8 +629,10 @@ def main():
     collector=None
     if not args.offline:
         collector=threading.Thread(target=lambda:asyncio.run(collect(runtime,key,secret,
-                   os.getenv('DNSE_WSS_URL','wss://ws-openapi.dnse.com.vn'))),daemon=True)
+                   os.getenv('DNSE_WSS_URL','wss://ws-openapi.dnse.com.vn'),
+                   args.ohlc_symbol_type)),daemon=True)
         collector.start()
+        threading.Thread(target=bootstrap_vn30_stocks,args=(runtime,key,secret),daemon=True).start()
     def shutdown(*_):
         runtime.stop.set()
         threading.Thread(target=server.shutdown,daemon=True).start()

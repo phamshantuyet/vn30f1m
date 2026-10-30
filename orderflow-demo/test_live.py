@@ -12,9 +12,42 @@ from unittest.mock import patch
 
 from live_store import LiveStore, normalize, normalize_influence, normalize_market_index, normalize_reference_price, normalize_ohlcv_1m, unpack
 from live_server import Handler, Runtime, collect
+from vn30_stocks import (VN30_SSI_SOURCE, VN30_SYMBOLS, load_vn30_symbols,
+                         normalize_vn30_stock, parse_vn30_symbols)
 
 DAY='2026-10-19'
 SYMBOL='41I1GB000'
+
+
+class Vn30ConstituentsTest(unittest.TestCase):
+    def test_ssi_list_is_used_and_cached_for_offline_startup(self):
+        symbols=['XYZ',*VN30_SYMBOLS[1:]]
+        payload={'code':'SUCCESS','data':[
+            {'stockSymbol':symbol,'exchange':'hose','market':'STO'} for symbol in symbols]}
+        with tempfile.TemporaryDirectory() as tmp:
+            cache=Path(tmp)/'vn30_symbols.json'
+            with patch('vn30_stocks.urlopen',return_value=io.BytesIO(json.dumps(payload).encode())):
+                loaded,source,period=load_vn30_symbols(cache)
+            self.assertEqual((loaded,source,period),(tuple(symbols),VN30_SSI_SOURCE,'SSI VN30'))
+            self.assertEqual(json.loads(cache.read_text())['symbols'],symbols)
+            with patch('vn30_stocks.urlopen',side_effect=OSError('offline')):
+                cached,source,period=load_vn30_symbols(cache)
+            self.assertEqual(cached,tuple(symbols))
+            self.assertEqual(source,VN30_SSI_SOURCE)
+            self.assertIn('lưu gần nhất',period)
+            with patch('vn30_stocks.urlopen',side_effect=AssertionError('offline must not fetch')):
+                self.assertEqual(load_vn30_symbols(cache,online=False)[0],tuple(symbols))
+            runtime=Runtime(tmp,SYMBOL,DAY,loaded,source,period)
+            self.assertEqual(runtime.store().vn30_stock_snapshot()['stocks'][0]['symbol'],'XYZ')
+            runtime.close()
+
+    def test_ssi_list_rejects_incomplete_or_duplicate_response(self):
+        rows=[{'stockSymbol':symbol,'exchange':'hose','market':'STO'}
+              for symbol in VN30_SYMBOLS]
+        with self.assertRaises(ValueError):
+            parse_vn30_symbols({'code':'SUCCESS','data':rows[:-1]})
+        with self.assertRaises(ValueError):
+            parse_vn30_symbols({'code':'SUCCESS','data':[rows[0],*rows[1:-1],rows[0]]})
 
 
 def event(kind,sec=0,qty=60,side='BUY',cumulative=60,price=1800.1,stats=None):
@@ -75,6 +108,52 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.raw_initial()['trade_stats'],latest)
         self.assertEqual(self.store.raw_initial()['trade_stats_source_ms'],event(1,1)[0])
 
+    def test_raw_hello_restores_traded_bid_and_ask_price_marks(self):
+        self.store.write([event(0),event(1,0,60,'BUY',60,1800.1),
+                          event(1,1,70,'SELL',130,1800.0),
+                          event(1,2,1,'?',131,1800.2)])
+        self.assertEqual(self.store.raw_initial()['hit_bids'],[18000])
+        self.assertEqual(self.store.raw_initial()['hit_asks'],[18001])
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.raw_initial()['hit_bids'],[18000])
+        self.assertEqual(self.store.raw_initial()['hit_asks'],[18001])
+
+    def test_trade_speed_history_counts_source_seconds_and_survives_restart(self):
+        self.store.write([event(1,0,60,'BUY',60),event(1,0,40,'SELL',100),
+                          event(1,2,25,'BUY',125)])
+        first=event(1,0)[0]//1000*1000
+        expected=[[first,2,100],[first+2000,1,25]]
+        self.assertEqual(self.store.trade_speed_history()['seconds'],expected)
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.trade_speed_history()['seconds'],expected)
+
+    def test_vn30_stock_prices_merge_out_of_order_and_restore(self):
+        self.assertEqual(len(VN30_SYMBOLS),30)
+        reference=normalize_vn30_stock(Obj(symbol='HPG',boardId='G1',marketId='STO',
+            basicPrice=21.2,time=f'{DAY} 08:00:00',receivedAt=1792371600),
+            'reference',DAY)
+        trade=normalize_vn30_stock(Obj(symbol='HPG',boardId='G1',marketId='STO',
+            price=21.3,highestPrice=21.5,lowestPrice=21.1,
+            time=f'{DAY} 09:30:00',receivedAt=1792377000),'trade',DAY)
+        writer=threading.Thread(target=self.store.writer)
+        writer.start()
+        self.store.enqueue_vn30_stock(reference)
+        self.store.enqueue_vn30_stock(trade)
+        self.store.enqueue_vn30_stock({**trade,'source_ms':trade['source_ms']-1000,
+            'last':20.0,'high':20.0,'low':19.0})
+        self.store.queue.join()
+        self.store.stop.set();writer.join()
+        row=next(row for row in self.store.vn30_stock_snapshot()['stocks'] if row['symbol']=='HPG')
+        self.assertEqual((row['reference'],row['last'],row['low'],row['high']),
+                         (21.2,21.3,21.1,21.5))
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        row=next(row for row in self.store.vn30_stock_snapshot()['stocks'] if row['symbol']=='HPG')
+        self.assertEqual((row['reference'],row['last'],row['low'],row['high']),
+                         (21.2,21.3,21.1,21.5))
+        with self.assertRaises(ValueError):
+            normalize_vn30_stock(Obj(symbol='HPG',boardId='T1',marketId='STO',
+                basicPrice=21.2,time=f'{DAY} 08:00:00'),'reference',DAY)
+
     def test_reference_price_restores_and_rejects_wrong_symbol(self):
         obj=Obj(symbol=SYMBOL,boardId='G1',basicPrice=1795.0,receivedAt=1792375200)
         price,received=normalize_reference_price(obj,SYMBOL)
@@ -112,6 +191,10 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.raw_initial()['ohlcv_latest'],closed)
         with self.assertRaises(ValueError):
             normalize_ohlcv_1m(Obj(**{**vars(source),'resolution':'5'}),SYMBOL,DAY)
+        typed=Obj(**{**vars(source),'symbol':'VN30F1M'})
+        self.assertEqual(normalize_ohlcv_1m(typed,SYMBOL,DAY,True,'VN30F1M')['volume'],20)
+        with self.assertRaises(ValueError):
+            normalize_ohlcv_1m(typed,SYMBOL,DAY,True,'VN30F2M')
 
     def test_vn30_influence_realtime_and_persisted_history(self):
         received=1792375200.1
@@ -123,6 +206,10 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.influence_initial()['latest'],snapshot)
         self.assertEqual(self.store.influence_since(0)[0][0]['items'],snapshot['items'])
         self.assertEqual(self.store.influence_history(300)['snapshots'],[])
+        source.receivedAt=received+.2
+        source.data[0].influence=1.8
+        spike=normalize_influence(source)
+        self.store.enqueue_influence(spike)
         source.receivedAt=received+.4
         source.data[0].influence=1.5
         latest=normalize_influence(source)
@@ -139,6 +226,8 @@ class StoreTest(unittest.TestCase):
         source.data[0].influence=.9
         next_bucket=normalize_influence(source)
         self.store.enqueue_influence(next_bucket)
+        self.assertEqual(self.store.influence_initial()['extrema'],
+                         {'HPG':[-.6,0],'VCB':[0,1.8]})
         self.store.stop.set()
         worker=threading.Thread(target=self.store.writer);worker.start();worker.join(2)
         self.assertFalse(worker.is_alive())
@@ -146,11 +235,40 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.influence_history(300)['snapshots'],[next_minute,next_bucket])
         self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
         self.assertEqual(self.store.influence_initial()['latest'],next_bucket)
+        self.assertEqual(self.store.influence_initial()['extrema'],
+                         {'HPG':[-.6,0],'VCB':[0,1.8]})
         self.assertEqual(self.store.influence_history(60)['snapshots'],[within_bucket,next_minute,next_bucket])
         self.assertEqual(self.store.influence_history(1)['snapshots'],[latest,within_bucket,next_minute,next_bucket])
         with self.assertRaises(ValueError):
             normalize_influence(Obj(index_name='VN30',receivedAt=received,data=[
                 Obj(symbol='VCB',influence=float('nan'))]))
+
+    def test_vn30_influence_total_extrema_survives_same_second_and_restart(self):
+        received=1792375200100
+        snapshots=[
+            {'received_ms':received,'items':[['VIC',-4],['HPG',-2],['VCB',2],['VHM',1]]},
+            {'received_ms':received+200,'items':[['VIC',-3],['HPG',-1],['VCB',4],['VHM',3]]},
+            {'received_ms':received+400,'items':[['VIC',4],['HPG',-1],['VCB',1],['VHM',-1]]},
+        ]
+        for snapshot in snapshots:
+            self.store.enqueue_influence(snapshot)
+        self.assertEqual(self.store.influence_initial()['total_extrema'],{'up':7,'down':-6})
+        self.assertEqual(self.store.influence_initial()['extrema']['VIC'],[-4,4])
+        self.store.stop.set()
+        worker=threading.Thread(target=self.store.writer);worker.start();worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(self.store.influence_history(1)['snapshots'],[snapshots[-1]])
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.influence_initial()['total_extrema'],{'up':7,'down':-6})
+        self.assertEqual(self.store.influence_initial()['extrema']['VIC'],[-4,4])
+
+    def test_old_influence_extrema_are_normalized_by_side(self):
+        self.store.conn.executemany('INSERT INTO index_influence_extrema VALUES (?,?,?)',
+                                    [('VCB',1,2),('HPG',-2,-1)])
+        self.store.conn.commit()
+        self.store.close();self.store=LiveStore(self.tmp.name,SYMBOL,DAY)
+        self.assertEqual(self.store.influence_initial()['extrema'],
+                         {'VCB':[0,2],'HPG':[-2,0]})
 
     def test_vn30_index_values_persist_and_ignore_older_source(self):
         received=1792375200.1
@@ -455,6 +573,12 @@ class RetentionTest(unittest.TestCase):
                         'SELECT count(*) FROM market_index_history').fetchone()[0],2)
                     self.assertEqual(saved.execute(
                         'SELECT count(*) FROM index_influence').fetchone()[0],1)
+                    self.assertEqual(saved.execute(
+                        'SELECT min_value,max_value FROM index_influence_extrema WHERE symbol=?',
+                        ('VCB',)).fetchone(),(0,1.25))
+                    self.assertEqual(saved.execute(
+                        'SELECT up_value,down_value FROM index_influence_total_extrema WHERE id=1').fetchone(),
+                        (1.25,0))
                     self.assertGreater(saved.execute(
                         'SELECT count(*) FROM basis_history').fetchone()[0],0)
                     self.assertIsNone(saved.execute(
@@ -496,6 +620,17 @@ class HttpTest(unittest.TestCase):
         self.runtime.store().enqueue_ohlcv(candle)
         response=self.request('/api/ohlcv-1m')
         self.assertEqual(json.loads(response.split(b'\r\n\r\n',1)[1])['candles'],[candle])
+
+    def test_trade_speed_api_returns_per_second_history(self):
+        response=self.request('/api/trade-speed')
+        body=json.loads(response.split(b'\r\n\r\n',1)[1])
+        self.assertEqual(body['symbol'],SYMBOL)
+        self.assertEqual(body['seconds'],[[event(1)[0]//1000*1000,1,60]])
+    def test_vn30_stocks_api_lists_all_constituents(self):
+        response=self.request('/api/vn30-stocks')
+        body=json.loads(response.split(b'\r\n\r\n',1)[1])
+        self.assertEqual(body['period'],'7/2026')
+        self.assertEqual([row['symbol'] for row in body['stocks']],list(VN30_SYMBOLS))
     def test_websocket_upgrade_pushes_snapshot(self):
         def sent(data):
             if data.startswith(b'\x81'):self.runtime.stop.set()
@@ -687,11 +822,11 @@ class CollectorTest(unittest.TestCase):
                     elif channel.startswith('security_definition'):
                         base.update(T='sd',basicPrice=1795.0)
                     elif channel.startswith('ohlc_closed'):
-                        base=dict(T='bc',symbol=SYMBOL,resolution='1',time=timestamp,
+                        base=dict(T='bc',symbol='VN30F1M',resolution='1',time=timestamp,
                                   lastUpdated=timestamp+60,open=1800,high=1801,
                                   low=1799.5,close=1800.7,volume=20)
                     elif channel.startswith('ohlc.'):
-                        base=dict(T='b',symbol=SYMBOL,resolution='1',time=timestamp,
+                        base=dict(T='b',symbol='VN30F1M',resolution='1',time=timestamp,
                                   lastUpdated=timestamp+20,open=1800,high=1801,
                                   low=1799.5,close=1800.5,volume=12)
                     else:
@@ -750,6 +885,9 @@ class CollectorTest(unittest.TestCase):
                                            'security_definition.G1.msgpack',
                                            'ohlc.1.msgpack','ohlc_closed.1.msgpack',
                                            'market_index_influence.VN30.1.msgpack'])
+                ohlc_subscriptions=[s['channels'][0]['symbols'] for s in sent
+                    if s['action']=='subscribe' and s['channels'][0]['name'].startswith('ohlc')]
+                self.assertEqual(ohlc_subscriptions,[['VN30F1M'],['VN30F1M']])
             finally:
                 runtime.close()
 

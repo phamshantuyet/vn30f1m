@@ -20,10 +20,13 @@ from pathlib import Path
 
 import msgpack
 from replay_server import Replay, TZ, ticks, record_book_history
+from vn30_stocks import VN30_PERIOD, VN30_SOURCE, VN30_SYMBOLS
 
 
-BACKUP_TABLES = ('metadata', 'gaps', 'index_influence',
-                 'market_index_latest', 'market_index_history', 'basis_history')
+BACKUP_TABLES = ('metadata', 'gaps', 'index_influence', 'index_influence_extrema',
+                 'index_influence_total_extrema',
+                 'market_index_latest', 'market_index_history', 'basis_history',
+                 'vn30_stock_latest')
 
 
 def backup_non_market(source_path, backup_path):
@@ -224,9 +227,9 @@ def normalize_reference_price(obj, symbol):
     return price,received
 
 
-def normalize_ohlcv_1m(obj, symbol, day, closed=False):
+def normalize_ohlcv_1m(obj, symbol, day, closed=False, ohlc_symbol_type=None):
     """Normalize DNSE's live/closed one-minute candle without inferring missing bars."""
-    if obj.symbol!=symbol or str(obj.resolution)!='1':
+    if obj.symbol!=(ohlc_symbol_type or symbol) or str(obj.resolution)!='1':
         raise ValueError('Unexpected OHLC symbol or resolution')
     def epoch_ms(value):
         number=float(value)
@@ -280,6 +283,8 @@ class LiveAccumulator(LiveReplay):
         self.max_asks={}
         self.last_bids={}
         self.last_asks={}
+        self.hit_bids=set()
+        self.hit_asks=set()
 
     def rebuild_history(self):
         """Repair visit boundaries after a rare out-of-order Quote, without rebuilding trades."""
@@ -324,6 +329,10 @@ class LiveAccumulator(LiveReplay):
             self.trade_seconds.insert(index,relative)
             self.trades.insert(index,(relative,p,q,side))
             self.trade_prices.add(p)
+            if side=='SELL':
+                self.hit_bids.add(p)
+            elif side=='BUY':
+                self.hit_asks.add(p)
             self.volume[side]+=q
             if key>self.last_trade_key:
                 self.last_price=p;self.source_volume=cumulative;self.last_trade_key=key
@@ -331,7 +340,8 @@ class LiveAccumulator(LiveReplay):
 
 
 class LiveStore:
-    def __init__(self, root, symbol, day):
+    def __init__(self, root, symbol, day, vn30_symbols=VN30_SYMBOLS,
+                 vn30_source=VN30_SOURCE, vn30_period=VN30_PERIOD):
         if not re.fullmatch(r'[A-Z0-9_-]{1,32}', symbol):
             raise ValueError('Invalid symbol')
         datetime.strptime(day,'%Y-%m-%d')
@@ -339,6 +349,9 @@ class LiveStore:
         folder.mkdir(parents=True,exist_ok=True)
         self.path = folder/(day+'.sqlite')
         self.symbol, self.day = symbol, day
+        self.vn30_symbols = tuple(vn30_symbols)
+        self.vn30_set = frozenset(self.vn30_symbols)
+        self.vn30_source, self.vn30_period = vn30_source, vn30_period
         self.lock = threading.RLock()
         self.changed = threading.Condition(self.lock)
         self.db_lock = threading.Lock()
@@ -357,6 +370,10 @@ class LiveStore:
         CREATE TABLE IF NOT EXISTS gaps(id INTEGER PRIMARY KEY,start_ms INTEGER,end_ms INTEGER,reason TEXT);
         CREATE TABLE IF NOT EXISTS index_influence(
           second INTEGER PRIMARY KEY,received_ms INTEGER NOT NULL,payload BLOB NOT NULL);
+        CREATE TABLE IF NOT EXISTS index_influence_extrema(
+          symbol TEXT PRIMARY KEY,min_value REAL NOT NULL,max_value REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS index_influence_total_extrema(
+          id INTEGER PRIMARY KEY CHECK(id=1),up_value REAL NOT NULL,down_value REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS market_index_latest(
           kind TEXT PRIMARY KEY,source_ms INTEGER,received_ms INTEGER NOT NULL,payload BLOB NOT NULL);
         CREATE TABLE IF NOT EXISTS market_index_history(
@@ -372,6 +389,8 @@ class LiveStore:
           minute_ms INTEGER PRIMARY KEY,updated_ms INTEGER NOT NULL,received_ms INTEGER NOT NULL,
           open REAL NOT NULL,high REAL NOT NULL,low REAL NOT NULL,close REAL NOT NULL,
           volume INTEGER NOT NULL,closed INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS vn30_stock_latest(
+          symbol TEXT PRIMARY KEY,payload BLOB NOT NULL);
         ''')
         meta_row = self.conn.execute("SELECT value FROM metadata WHERE key='stats'").fetchone()
         reference_row=self.conn.execute(
@@ -399,6 +418,37 @@ class LiveStore:
         self.influence_events = [None]*4096
         self.influence_sequence = 0
         self.influence_invalid = 0
+        # Seed an older database from its retained per-second snapshots once.
+        if self.conn.execute('SELECT 1 FROM index_influence_extrema LIMIT 1').fetchone() is None:
+            historical = {}
+            for (payload,) in self.conn.execute('SELECT payload FROM index_influence'):
+                for ticker,value in unpack(payload):
+                    previous=historical.get(ticker)
+                    historical[ticker]=[min(previous[0],value),max(previous[1],value)] if previous else [min(0,value),max(0,value)]
+            self.conn.executemany('INSERT INTO index_influence_extrema VALUES (?,?,?)',
+                                  ((ticker,*values) for ticker,values in historical.items()))
+            self.conn.commit()
+        # Older rows used the smallest/largest observation even if both had the
+        # same sign. Zero means that side has not been seen in this session.
+        self.conn.execute('''UPDATE index_influence_extrema SET
+            min_value=MIN(0,min_value),max_value=MAX(0,max_value)
+            WHERE min_value>0 OR max_value<0''')
+        self.conn.commit()
+        self.influence_extrema={ticker:[minimum,maximum] for ticker,minimum,maximum in
+            self.conn.execute('SELECT symbol,min_value,max_value FROM index_influence_extrema')}
+        total_row=self.conn.execute(
+            'SELECT up_value,down_value FROM index_influence_total_extrema WHERE id=1').fetchone()
+        if total_row is None:
+            for (payload,) in self.conn.execute('SELECT payload FROM index_influence'):
+                items=unpack(payload)
+                up=sum(value for _,value in items if value>0)
+                down=sum(value for _,value in items if value<0)
+                total_row=(max(total_row[0],up),min(total_row[1],down)) if total_row else (up,down)
+            if total_row is not None:
+                self.conn.execute('INSERT INTO index_influence_total_extrema VALUES (1,?,?)',total_row)
+                self.conn.commit()
+        self.influence_total_extrema=(dict(zip(('up','down'),total_row))
+                                      if total_row else None)
         influence_row = self.conn.execute(
             'SELECT received_ms,payload FROM index_influence ORDER BY second DESC LIMIT 1').fetchone()
         self.influence_latest = ({'received_ms':influence_row[0],
@@ -408,6 +458,9 @@ class LiveStore:
         self.index_invalid = 0
         self.index_latest = {kind:unpack(payload) for kind,payload in self.conn.execute(
             'SELECT kind,payload FROM market_index_latest')}
+        self.vn30_stock_latest={symbol:unpack(payload) for symbol,payload in self.conn.execute(
+            'SELECT symbol,payload FROM vn30_stock_latest') if symbol in self.vn30_set}
+        self.vn30_stock_invalid=0
         self.queue = queue.Queue(maxsize=100000)
         self.stop = threading.Event()
         self.status = 'offline'
@@ -512,12 +565,28 @@ class LiveStore:
             if (self.influence_latest is None or
                     snapshot['received_ms'] >= self.influence_latest['received_ms']):
                 self.influence_latest = snapshot
+            for ticker,value in snapshot['items']:
+                extrema=self.influence_extrema.get(ticker)
+                if extrema is None:
+                    self.influence_extrema[ticker]=[min(0,value),max(0,value)]
+                else:
+                    extrema[0]=min(extrema[0],value)
+                    extrema[1]=max(extrema[1],value)
+            up=sum(value for _,value in snapshot['items'] if value>0)
+            down=sum(value for _,value in snapshot['items'] if value<0)
+            if self.influence_total_extrema is None:
+                self.influence_total_extrema={'up':up,'down':down}
+            else:
+                self.influence_total_extrema['up']=max(self.influence_total_extrema['up'],up)
+                self.influence_total_extrema['down']=min(self.influence_total_extrema['down'],down)
             self.changed.notify_all()
 
     def influence_initial(self):
         with self.lock:
             return {'index':'VN30','day':self.day,'status':self.status,
                     'cursor':self.influence_sequence,'latest':self.influence_latest,
+                    'extrema':{ticker:values[:] for ticker,values in self.influence_extrema.items()},
+                    'total_extrema':self.influence_total_extrema.copy() if self.influence_total_extrema else None,
                     'invalid':self.influence_invalid}
 
     def influence_since(self, cursor, limit=128):
@@ -555,6 +624,53 @@ class LiveStore:
             self.index_events[self.index_sequence % len(self.index_events)] = {
                 'seq':self.index_sequence,**snapshot}
             self.changed.notify_all()
+
+    def enqueue_vn30_stock(self, snapshot):
+        with self.lock:
+            if self.stop.is_set():
+                return
+            symbol,kind=snapshot['symbol'],snapshot['kind']
+            if symbol not in self.vn30_set or kind not in ('reference','trade'):
+                raise ValueError('Invalid VN30 stock update')
+            old=self.vn30_stock_latest.get(symbol,{'symbol':symbol})
+            old_key=(old.get(kind+'_source_ms',-1),old.get(kind+'_received_ms',-1))
+            new_key=(snapshot['source_ms'],snapshot['received_ms'])
+            if new_key<old_key:
+                return
+            updated=dict(old)
+            updated[kind+'_source_ms']=snapshot['source_ms']
+            updated[kind+'_received_ms']=snapshot['received_ms']
+            for field in ('reference',) if kind=='reference' else ('last','high','low'):
+                if snapshot.get(field) is not None:
+                    updated[field]=snapshot[field]
+            try:
+                self.queue.put_nowait(('vn30_stock',updated))
+            except queue.Full:
+                self.failed=True
+                self.connection('error','Capture queue full; recording stopped')
+                raise RuntimeError('Capture queue full')
+            self.vn30_stock_latest[symbol]=updated
+            self.changed.notify_all()
+
+    def vn30_stock_snapshot(self):
+        with self.lock:
+            return {'index':'VN30','day':self.day,'period':self.vn30_period,
+                    'source':self.vn30_source,'status':self.status,
+                    'stocks':[dict(self.vn30_stock_latest.get(symbol,{'symbol':symbol}))
+                              for symbol in self.vn30_symbols],
+                    'invalid':self.vn30_stock_invalid}
+
+    def write_vn30_stocks(self, snapshots):
+        latest={snapshot['symbol']:snapshot for snapshot in snapshots}
+        with self.db_lock:
+            try:
+                self.conn.executemany('''INSERT INTO vn30_stock_latest(symbol,payload)
+                    VALUES (?,?) ON CONFLICT(symbol) DO UPDATE SET payload=excluded.payload''',
+                    [(symbol,pack(snapshot)) for symbol,snapshot in latest.items()])
+                self.conn.commit()
+            except Exception:
+                self.conn.rollback()
+                raise
 
     def set_reference_price(self, price, received):
         if not math.isfinite(price) or price<=0:
@@ -715,6 +831,17 @@ class LiveStore:
             try:
                 for snapshot in snapshots:
                     received=snapshot['received_ms']
+                    up=sum(value for _,value in snapshot['items'] if value>0)
+                    down=sum(value for _,value in snapshot['items'] if value<0)
+                    self.conn.execute('''INSERT INTO index_influence_total_extrema(id,up_value,down_value)
+                        VALUES (1,?,?) ON CONFLICT(id) DO UPDATE SET
+                        up_value=MAX(up_value,excluded.up_value),
+                        down_value=MIN(down_value,excluded.down_value)''',(up,down))
+                    self.conn.executemany('''INSERT INTO index_influence_extrema(symbol,min_value,max_value)
+                        VALUES (?,?,?) ON CONFLICT(symbol) DO UPDATE SET
+                        min_value=MIN(min_value,excluded.min_value),
+                        max_value=MAX(max_value,excluded.max_value)''',
+                        ((ticker,min(0,value),max(0,value)) for ticker,value in snapshot['items']))
                     self.conn.execute('''INSERT INTO index_influence(second,received_ms,payload)
                         VALUES (?,?,?) ON CONFLICT(second) DO UPDATE SET
                         received_ms=excluded.received_ms,payload=excluded.payload
@@ -775,7 +902,24 @@ class LiveStore:
                     'max_bids':[[price,qty,ts] for price,(qty,ts) in self.live_engine.max_bids.items()],
                     'max_asks':[[price,qty,ts] for price,(qty,ts) in self.live_engine.max_asks.items()],
                     'last_bids':[[price,qty,ts] for price,(qty,ts,_) in self.live_engine.last_bids.items()],
-                    'last_asks':[[price,qty,ts] for price,(qty,ts,_) in self.live_engine.last_asks.items()]}
+                    'last_asks':[[price,qty,ts] for price,(qty,ts,_) in self.live_engine.last_asks.items()],
+                    'hit_bids':sorted(self.live_engine.hit_bids),
+                    'hit_asks':sorted(self.live_engine.hit_asks)}
+
+    def trade_speed_history(self):
+        """Trade count and contract volume for each source-time second in this session."""
+        with self.lock:
+            seconds=[]
+            for (source_ms,_),(_,_,qty,_) in zip(
+                    self.live_engine.trade_keys,self.live_engine.trades):
+                second_ms=source_ms//1000*1000
+                if seconds and seconds[-1][0]==second_ms:
+                    seconds[-1][1]+=1
+                    seconds[-1][2]+=qty
+                else:
+                    seconds.append([second_ms,1,qty])
+            return {'day':self.day,'symbol':self.symbol,'cursor':self.raw_sequence,
+                    'seconds':seconds}
 
     def raw_since(self, cursor, limit=512):
         with self.lock:
@@ -867,11 +1011,12 @@ class LiveStore:
                         batch.append(self.queue.get(timeout=max(0,deadline-time.monotonic())))
                     except queue.Empty:
                         break
-                market=[event for event in batch if event[0] not in ('influence','index','basis','ohlcv')]
+                market=[event for event in batch if event[0] not in ('influence','index','basis','ohlcv','vn30_stock')]
                 influence=[event[1] for event in batch if event[0]=='influence']
                 indexes=[event[1] for event in batch if event[0]=='index']
                 basis=[event[1] for event in batch if event[0]=='basis']
                 candles=[event[1] for event in batch if event[0]=='ohlcv']
+                vn30_stocks=[event[1] for event in batch if event[0]=='vn30_stock']
                 if market:
                     self.write(market,queued=True)
                 if influence:
@@ -882,6 +1027,8 @@ class LiveStore:
                     self.write_basis(basis)
                 if candles:
                     self.write_ohlcv(candles)
+                if vn30_stocks:
+                    self.write_vn30_stocks(vn30_stocks)
                 for _ in batch:
                     self.queue.task_done()
         except Exception as exc:

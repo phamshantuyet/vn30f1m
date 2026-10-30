@@ -35,6 +35,10 @@ small{font-size:10px}
 .book th{position:sticky;top:0;z-index:2;height:27px;padding:4px 2px;background:#c0c0c0;color:#000;border:1px solid;border-color:#fff #808080 #808080 #fff;font:700 10px Tahoma,Arial,sans-serif}
 .book td{text-align:center;height:29px;padding:4px 2px;border-bottom:1px solid #d0d0d0}
 .book .price{background:#e5eaf4;color:#001f70;font-size:14px;font-weight:800}
+.book .price-inner{display:grid;grid-template-columns:20px minmax(0,1fr) 20px;align-items:center}
+.book .trade-mark{font:900 17px Tahoma,Arial,sans-serif;line-height:1}
+.book .trade-mark.bid-hit{color:#087135}.book .trade-mark.ask-hit{color:#bd1737}
+.book tr.best-bid .trade-mark.bid-hit,.book tr.best-ask .trade-mark.ask-hit{color:#fff}
 .book .bid{color:#064b0c;background:linear-gradient(to left,#d2ecd2 var(--depth),#fff var(--depth))}
 .book .ask{color:#7c0018;background:linear-gradient(to right,#f2d2d9 var(--depth),#fff var(--depth))}
 .book .bid.last-seen,.book .ask.last-seen{color:#8a8a8a;background:#f2f2f2;font-weight:400}
@@ -44,6 +48,8 @@ small{font-size:10px}
 .book tr.best-bid .bid,.book tr.best-bid .price{background:#005126;color:#fff;font-weight:800;box-shadow:inset 1px 1px #87c99f,inset -1px -1px #003b1e}
 .book tr.best-ask .ask,.book tr.best-ask .price{background:#7b001c;color:#fff;font-weight:800;box-shadow:inset 1px 1px #e2a8b4,inset -1px -1px #530716}
 .book tr.last-trade .price{outline:2px solid #000080;outline-offset:-2px}
+.book-mark-legend{margin:-1px 0 6px;color:#333;font-size:10px}
+.book-mark-legend .bid-hit{color:#087135;font-weight:900}.book-mark-legend .ask-hit{color:#bd1737;font-weight:900}
 .book tr.price-gap td{height:20px;padding:2px;background:#e8e8e8;color:#555;font:10px Tahoma,Arial,sans-serif}
 .book-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px;font-size:10px;color:#333}
 .book-summary>div{min-width:0;padding:4px 5px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
@@ -60,10 +66,69 @@ small{font-size:10px}
 .ohlcv-alert{padding:7px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
 .ohlcv-alert strong{display:block;margin:4px 0;font:700 21px Tahoma,Arial,sans-serif;color:#001f6b}
 .ohlcv-alert .muted{font-size:10px}
+.ohlcv-countdown{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0;padding:5px 6px;background:#e9eefb;border:1px solid #8a98b4;font-size:11px;font-weight:700}
+.ohlcv-countdown b{color:#001f6b;font:800 17px Tahoma,Arial,sans-serif;white-space:nowrap}
 .ohlcv-alert.is-warning{background:#b00020;color:#fff;border:3px solid #ffe14d;box-shadow:0 0 0 3px #ff4b78,0 0 16px #ff1744;animation:ohlcv-flash .8s steps(2,end) infinite}
+.ohlcv-alert.is-warning .ohlcv-countdown{background:#7b001c;border-color:#ffe14d}
+.ohlcv-alert.is-warning .ohlcv-countdown b{color:#fff36b}
 .ohlcv-alert.is-warning strong{color:#fff36b;font:900 36px Tahoma,Arial,sans-serif;line-height:1.15;text-shadow:2px 2px #650018;animation:ohlcv-volume-flash .8s steps(2,end) infinite}
 .ohlcv-alert.is-warning #ohlcv-state{display:block;font-size:13px;font-weight:900;letter-spacing:.3px}
 .ohlcv-alert.is-warning .muted{color:#fff;font-weight:700}
+.ohlcv-history{margin-top:10px}
+.ohlcv-history-summary{margin-bottom:7px;font-size:11px;color:#333}
+.ohlcv-history-wrap{max-height:330px;overflow:auto;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
+.ohlcv-history-table{width:100%;min-width:680px;border-collapse:collapse;font:11px Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.ohlcv-history-table th{position:sticky;top:0;background:#d4d0c8;text-align:right;padding:6px;border-bottom:1px solid #888}
+.ohlcv-history-table th:first-child,.ohlcv-history-table th:nth-child(2){text-align:left}
+.ohlcv-history-table td{padding:6px;text-align:right;border-bottom:1px solid #ddd}
+.ohlcv-history-table td:first-child,.ohlcv-history-table td:nth-child(2){text-align:left}
+.ohlcv-history-table tr:nth-child(even){background:#f3f3f3}
+.ohlcv-history-table .up{color:#086632;font-weight:700}.ohlcv-history-table .down{color:#a32132;font-weight:700}.ohlcv-history-table .flat{color:#555;font-weight:700}
+.ohlcv-history-table .open-candle{color:#7b4700;font-weight:700}
+.ohlcv-history-table .empty{text-align:center;color:#555;padding:13px}
+.trade-speed{margin-top:10px}
+.trade-speed>h2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.trade-speed-fullscreen{padding:2px 7px;background:#c0c0c0;color:#000;border:2px solid;border-color:#fff #404040 #404040 #fff;font:700 11px Tahoma,Arial,sans-serif;cursor:pointer;white-space:nowrap}
+.trade-speed-fullscreen:focus-visible{outline:2px solid #ffe14d;outline-offset:2px}
+.trade-speed-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px}
+.trade-speed-controls select{font:11px Tahoma,Arial,sans-serif;padding:3px;background:#fff}
+.trade-speed-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:7px}
+.trade-speed-metrics>div{padding:6px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;font-size:11px}
+.trade-speed-metrics strong{display:block;margin-top:3px;font:700 21px Tahoma,Arial,sans-serif;color:#001f6b}
+.trade-speed-metrics>div:last-child strong{color:#087135}
+.trade-speed-chart-wrap{overflow:auto;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
+.trade-speed-chart{display:block;width:100%;min-width:700px;height:auto;min-height:285px;font:11px Tahoma,Arial,sans-serif}
+.trade-speed-chart .grid-line{stroke:#ddd;stroke-width:1}.trade-speed-chart .axis{stroke:#777;stroke-width:1}
+.trade-speed-chart .orders-line{fill:none;stroke:#1549a4;stroke-width:2;vector-effect:non-scaling-stroke}
+.trade-speed-chart .contracts-line{fill:none;stroke:#087135;stroke-width:2;vector-effect:non-scaling-stroke}
+.trade-speed-chart .ema-line{fill:none;stroke:#cf6700;stroke-width:2;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}
+.trade-speed-legend{display:flex;gap:16px;flex-wrap:wrap;margin:5px 0 7px;font-size:11px}
+.trade-speed-legend i{display:inline-block;width:22px;height:0;margin-right:5px;border-top:2px solid;vertical-align:middle}
+.trade-speed-legend .orders{border-color:#1549a4}.trade-speed-legend .contracts{border-color:#087135}
+.trade-speed-legend .ema{border-color:#cf6700;border-top-style:dashed}
+.trade-speed-footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:#333}
+.trade-speed:fullscreen,.trade-speed.is-expanded{display:flex;flex-direction:column;width:100vw;height:100vh;margin:0;padding:10px;background:#c0c0c0;overflow:hidden}
+.trade-speed:fullscreen>h2,.trade-speed.is-expanded>h2{margin:-10px -10px 10px;padding:8px 10px;font-size:15px}
+.trade-speed:fullscreen .trade-speed-chart-wrap,.trade-speed.is-expanded .trade-speed-chart-wrap{display:flex;flex:1;min-height:0}
+.trade-speed:fullscreen .trade-speed-chart,.trade-speed.is-expanded .trade-speed-chart{width:100%;height:100%;min-width:0;min-height:0}
+.trade-speed.is-expanded{position:fixed;inset:0;z-index:1000}
+.vn30-stocks{margin-top:10px}
+.vn30-stocks-intro{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:7px;font-size:11px}
+.vn30-stocks-wrap{max-height:510px;overflow:auto;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
+.vn30-stocks-table{width:100%;min-width:690px;border-collapse:collapse;font:12px Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.vn30-stocks-table th{position:sticky;top:0;z-index:1;padding:7px 8px;background:#d4d0c8;border-bottom:1px solid #888;text-align:right}
+.vn30-stocks-table th button{width:100%;padding:2px 0;border:0;background:transparent;color:#111;font:700 11px Tahoma,Arial,sans-serif;text-align:inherit;cursor:pointer;white-space:nowrap}
+.vn30-stocks-table th button:focus-visible{outline:2px solid #000080;outline-offset:2px}
+.vn30-stocks-table .sort-arrow{display:inline-block;min-width:12px;color:#555}
+.vn30-stocks-table th[aria-sort] .sort-arrow{color:#000080}
+.vn30-stocks-table td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:right}
+.vn30-stocks-table th:first-child,.vn30-stocks-table td:first-child{text-align:left}
+.vn30-stocks-table tr:nth-child(even){background:#f3f3f3}
+.vn30-stocks-table .symbol{font-weight:800;color:#001f6b}
+.vn30-stocks-table .symbol a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.vn30-stocks-table .symbol a:focus-visible{outline:2px solid #000080;outline-offset:2px}
+.vn30-stocks-table .up{color:#087135;font-weight:700}.vn30-stocks-table .down{color:#b12239;font-weight:700}.vn30-stocks-table .flat{color:#555;font-weight:700}
+.vn30-stocks-table .empty{text-align:center;padding:13px;color:#555}
 @keyframes ohlcv-flash{50%{background:#f01843;border-color:#52f8ff;box-shadow:0 0 0 3px #ffe14d,0 0 22px #f01843}}
 @keyframes ohlcv-volume-flash{50%{color:#73fff6;text-shadow:2px 2px #660014}}
 @media(prefers-reduced-motion:reduce){.ohlcv-alert.is-warning,.ohlcv-alert.is-warning strong{animation:none}}
@@ -126,23 +191,37 @@ small{font-size:10px}
 .impact-area-chart .area-hit:focus-visible{outline:2px dotted #000080}
 .contribution-panel{margin-top:8px}
 .contribution-wrap{max-height:650px;overflow:auto;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}
-.contribution-chart{display:block;width:100%;min-width:760px;height:var(--contribution-height,340px);background:#fff;font:11px Tahoma,Arial,sans-serif}
-.contribution-chart .contribution-grid{stroke:#dedede;stroke-width:1}
-.contribution-chart .contribution-zero{stroke:#333;stroke-width:2}
-.contribution-chart .contribution-axis{fill:#444;font-size:11px}
-.contribution-chart .contribution-ticker{fill:#222;font-weight:700;font-size:12px}
-.contribution-chart .contribution-value{font-weight:700;font-size:11px}
-.contribution-chart .contribution-value.up{fill:#086632}
-.contribution-chart .contribution-value.down{fill:#a32132}
-.contribution-chart .contribution-value.flat{fill:#666}
-.contribution-chart .contribution-bar{cursor:pointer}
-.contribution-chart .contribution-bar.up{fill:#168047}
-.contribution-chart .contribution-bar.down{fill:#b22a3d}
-.contribution-chart .contribution-bar.flat{fill:#888}
-.contribution-chart .contribution-bar:hover,.contribution-chart .contribution-bar:focus-visible{stroke:#000080;stroke-width:2;outline:none}
+.contribution-table{width:100%;min-width:360px;table-layout:fixed;border-collapse:separate;border-spacing:0;font:13px Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.contribution-table th{position:sticky;top:0;z-index:2;padding:8px 10px;background:#d4d0c8;border-bottom:1px solid #888;color:#222;text-align:right;white-space:nowrap}
+.contribution-table th:first-child,.contribution-table td:first-child{text-align:left;width:18%}
+.contribution-table th:first-child{left:0;z-index:3}
+.contribution-table th:nth-child(2),.contribution-table td:nth-child(2){text-align:right;width:41%}
+.contribution-table th:nth-child(3),.contribution-table td:nth-child(3){text-align:left;width:41%;border-left:2px solid #777}
+.contribution-table td{padding:1px 8px;border-bottom:1px solid #e2e2e2;line-height:17px;white-space:nowrap}
+.contribution-table tbody tr:nth-child(even){background:#f6f7f8}
+.contribution-table tbody tr:hover{background:#e9f0fc}
+.contribution-table .ticker{position:sticky;left:0;z-index:1;background:#fff;color:#001f6b;font-weight:800}
+.contribution-table .ticker .current-zero{color:#666;font-size:10px;font-weight:400}
+.contribution-table tr:nth-child(even) .ticker{background:#f6f7f8}
+.contribution-table tr:hover .ticker{background:#e9f0fc}
+.contribution-table .up{color:#086632;font-weight:700}
+.contribution-table .down{color:#a32132;font-weight:700}
+.contribution-table .flat,.contribution-table .empty{color:#666}
+.contribution-side{position:relative;display:flex;align-items:center;min-height:18px;overflow:hidden}
+.contribution-side.down{justify-content:flex-end}.contribution-side.up{justify-content:flex-start}
+.contribution-side .bar{position:absolute;top:2px;bottom:2px;border-radius:2px;opacity:.38}
+.contribution-side.down .bar{right:0;background:#b22a3d}
+.contribution-side.up .bar{left:0;background:#168047}
+.contribution-side strong{position:relative;z-index:1;padding:0 5px;font:700 12px Tahoma,Arial,sans-serif}
+.contribution-side .contribution-peak{font-weight:600;opacity:.85}
+.contribution-only-peak{display:inline-block;padding:0 5px;font:600 11px Tahoma,Arial,sans-serif;opacity:.85}
+.contribution-table td[colspan="2"]{text-align:center}
+.contribution-table .empty{text-align:center;padding:15px}
 .contribution-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
 .contribution-total{display:flex;justify-content:space-between;gap:8px;padding:7px 9px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;font-size:11px}
 .contribution-total strong{font:700 14px "Courier New",monospace;white-space:nowrap}
+.contribution-total .extreme{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+.contribution-total small{font-size:10px;color:#555}
 .contribution-total.up strong{color:#086632}.contribution-total.down strong{color:#a32132}
 .breadth-panel{margin-top:8px}
 .breadth-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -172,18 +251,21 @@ small{font-size:10px}
 </head><body><main>
 <header><div><h1>DOM · đo độ trễ trực tiếp</h1><div class="muted">Quote + Trade Extra + giá tham chiếu qua WebSocket riêng của server · <a href="/orderflow-live.html">Trang Order Flow</a> · <a href="#impact-preview">Bản đồ VN30 mẫu</a></div></div><span id="status" class="pill">ĐANG KẾT NỐI</span></header>
 <div class="layout">
- <section class="panel dom-panel"><h2><span class="box-number">2</span>DOM · sổ lệnh theo mức giá</h2><div class="dom-controls"><span class="muted" id="book-range">Đang chờ Quote…</span><button id="book-current" type="button">Về giá hiện tại</button></div><div class="book-wrap" id="book-wrap"><table class="book"><thead><tr><th>MAX BID</th><th>BID</th><th>GIÁ</th><th>ASK</th><th>MAX ASK</th></tr></thead><tbody id="book"></tbody></table></div><div class="book-summary"><div>BID DEPTH<strong id="bid-depth">—</strong></div><div>ASK DEPTH<strong id="ask-depth">—</strong></div><div>SPREAD<strong id="spread">—</strong></div><div>OBI<strong id="obi">—</strong></div></div><section class="max-history"><h2><span class="box-number">3</span>MAX lớn nhất từ đầu phiên</h2><div class="muted">Top 10 mức giá mỗi bên · nạp từ Quote đã lưu và cập nhật realtime</div><div class="book-wrap"><table class="book"><thead><tr><th>#</th><th>GIÁ BID</th><th>MAX BID (HĐ)</th><th>GIỜ QUOTE</th><th>GIÁ ASK</th><th>MAX ASK (HĐ)</th><th>GIỜ QUOTE</th></tr></thead><tbody id="max-history"><tr><td colspan="7" class="muted">Đang chờ Quote…</td></tr></tbody></table></div></section></section>
- <div class="stack"><section class="panel"><h2><span class="box-number">13</span>Biến động giá hiện tại</h2><div class="price-change"><div class="kv"><span>Giá khớp gần nhất</span><strong id="change-last">—</strong></div><div class="kv"><span>Giá tham chiếu</span><strong id="change-reference">—</strong></div><div class="kv"><span>So với tham chiếu</span><strong id="change-vs-reference">—</strong></div><div class="kv"><span>Giá mở cửa</span><strong id="change-open">—</strong></div><div class="kv"><span>So với mở cửa</span><strong id="change-vs-open">—</strong></div></div></section><section class="panel"><h2><span class="box-number">14</span>Cảnh báo volume nến 1 phút</h2><div class="ohlcv-alert" id="ohlcv-alert"><span id="ohlcv-minute">Đang chờ nến…</span><strong id="ohlcv-volume">—</strong><span id="ohlcv-state">Chưa có dữ liệu OHLCV</span><div class="muted">Cảnh báo khi nến chưa đóng có volume &gt; 1.500 HĐ.</div></div></section><section class="panel"><h2><span class="box-number">4</span>Giao dịch gần nhất</h2><div class="price-large" id="last-price">—</div><div class="kv"><span>Khối lượng</span><strong id="last-qty">—</strong></div><div class="kv"><span>Chiều chủ động</span><strong id="last-side">—</strong></div><div class="kv"><span>Giờ nguồn</span><strong id="trade-source">—</strong></div></section>
+ <section class="panel dom-panel"><h2><span class="box-number">2</span>DOM · sổ lệnh theo mức giá</h2><div class="dom-controls"><span class="muted" id="book-range">Đang chờ Quote…</span><button id="book-current" type="button">Về giá hiện tại</button></div><div class="book-mark-legend"><span class="bid-hit">^</span> SELL đã khớp vào BID · <span class="ask-hit">▼</span> BUY đã khớp vào ASK</div><div class="book-wrap" id="book-wrap"><table class="book"><thead><tr><th>MAX BID</th><th>BID</th><th>GIÁ</th><th>ASK</th><th>MAX ASK</th></tr></thead><tbody id="book"></tbody></table></div><div class="book-summary"><div>BID DEPTH<strong id="bid-depth">—</strong></div><div>ASK DEPTH<strong id="ask-depth">—</strong></div><div>SPREAD<strong id="spread">—</strong></div><div>OBI<strong id="obi">—</strong></div></div><section class="max-history"><h2><span class="box-number">3</span>MAX lớn nhất từ đầu phiên</h2><div class="muted">Top 10 mức giá mỗi bên · nạp từ Quote đã lưu và cập nhật realtime</div><div class="book-wrap"><table class="book"><thead><tr><th>#</th><th>GIÁ BID</th><th>MAX BID (HĐ)</th><th>GIỜ QUOTE</th><th>GIÁ ASK</th><th>MAX ASK (HĐ)</th><th>GIỜ QUOTE</th></tr></thead><tbody id="max-history"><tr><td colspan="7" class="muted">Đang chờ Quote…</td></tr></tbody></table></div></section></section>
+ <div class="stack"><section class="panel"><h2><span class="box-number">13</span>Biến động giá hiện tại</h2><div class="price-change"><div class="kv"><span>Giá khớp gần nhất</span><strong id="change-last">—</strong></div><div class="kv"><span>Giá tham chiếu</span><strong id="change-reference">—</strong></div><div class="kv"><span>So với tham chiếu</span><strong id="change-vs-reference">—</strong></div><div class="kv"><span>Giá mở cửa</span><strong id="change-open">—</strong></div><div class="kv"><span>So với mở cửa</span><strong id="change-vs-open">—</strong></div></div></section><section class="panel"><h2><span class="box-number">14</span>Cảnh báo volume nến 1 phút</h2><div class="ohlcv-alert" id="ohlcv-alert"><span id="ohlcv-minute">Đang chờ nến…</span><strong id="ohlcv-volume">—</strong><span id="ohlcv-state">Chưa có dữ liệu OHLCV</span><div class="ohlcv-countdown"><span>Còn lại trước khi đóng nến</span><b id="ohlcv-countdown">—</b></div><div class="muted">Cảnh báo khi nến chưa đóng có volume &gt; 1.500 HĐ.</div></div></section><section class="panel"><h2><span class="box-number">4</span>Giao dịch gần nhất</h2><div class="price-large" id="last-price">—</div><div class="kv"><span>Khối lượng</span><strong id="last-qty">—</strong></div><div class="kv"><span>Chiều chủ động</span><strong id="last-side">—</strong></div><div class="kv"><span>Giờ nguồn</span><strong id="trade-source">—</strong></div></section>
  <section class="panel"><h2><span class="box-number">5</span>Mốc của Quote vừa nhận</h2><div class="kv"><span>Giờ nguồn</span><strong id="quote-source">—</strong></div><div class="kv"><span>SDK nhận</span><strong id="quote-received">—</strong></div><div class="kv"><span>Server đẩy</span><strong id="quote-sent">—</strong></div><div class="kv"><span>Trang nhận</span><strong id="quote-browser">—</strong></div><div class="kv"><span>Best BID / ASK</span><strong id="best">—</strong></div><div class="kv"><span>Bản tin vượt bộ đệm RAM</span><strong id="lost">0</strong></div><div class="trade-stats"><h3>Trade Extra mới nhất · theo DNSE</h3><div class="kv"><span>totalVolumeTraded</span><strong id="trade-total-volume">—</strong></div><div class="kv"><span>grossTradeAmount</span><strong id="trade-gross-amount">—</strong></div><div class="kv"><span>avgPrice</span><strong id="trade-avg-price">—</strong></div><div class="kv"><span>highestPrice</span><strong id="trade-high-price">—</strong></div><div class="kv"><span>lowestPrice</span><strong id="trade-low-price">—</strong></div><div class="kv"><span>openPrice</span><strong id="trade-open-price">—</strong></div></div></section>
  <section class="panel index-panel" id="index-panel"><h2><span class="box-number">9</span>VN30 · Chỉ số và Basis</h2><div class="index-status" id="index-status">ĐANG CHỜ DNSE</div><div class="index-card"><h3>Market Index · VN30 chính thức</h3><strong class="index-value" id="index-market-value">—</strong><span class="index-change" id="index-market-change">—</span><div class="kv"><span>Tham chiếu / cao / thấp</span><strong id="index-market-range">—</strong></div><div class="kv"><span>Tăng / giảm / đứng</span><strong id="index-market-breadth">—</strong></div><div class="kv"><span>Khối lượng / giá trị</span><strong id="index-market-liquidity">—</strong></div><div class="muted" id="index-market-time">Giờ DNSE: —</div></div><div class="index-card"><h3>Estimated VN30 · DNSE dự tính</h3><strong class="index-value" id="index-estimated-value">—</strong><span class="index-change" id="index-estimated-change">—</span><div class="kv"><span>Tăng / giảm / đứng</span><strong id="index-estimated-breadth">—</strong></div><div class="kv"><span>Khối lượng / giá trị</span><strong id="index-estimated-liquidity">—</strong></div><div class="muted" id="index-estimated-time">Giờ DNSE: —</div></div><div class="kv"><span id="index-future-symbol">Hợp đồng · khớp cuối</span><strong id="index-future-last">—</strong></div><div class="kv"><span>Basis so với VN30</span><strong class="index-basis" id="index-basis-market">—</strong></div><div class="kv"><span>Basis so với VN30 dự tính</span><strong class="index-basis" id="index-basis-estimated">—</strong></div><div class="muted" id="index-future-time">Giờ khớp cuối: —</div><div class="muted">Basis = giá khớp cuối hợp đồng − chỉ số VN30 tương ứng. VN30 dự tính là giá trị DNSE gửi, không tự nội suy từ mã thành phần.</div></section></div>
 </div>
 <section class="panel log"><h2><span class="box-number">6</span>10 đợt WebSocket gần nhất</h2><table><thead><tr><th>Trang nhận</th><th>Quote</th><th>Trade</th><th>SDK nhận sớm nhất → muộn nhất</th><th>Server → trang*</th></tr></thead><tbody id="log"></tbody></table></section>
 <section class="panel impact-preview" id="impact-preview"><h2><span class="box-number">7</span>Bản đồ mã tác động đến VN30</h2><div class="impact-intro"><span>Trục ngang: thời gian giao dịch theo khung đã chọn (nghỉ trưa thu gọn) · Trục dọc: điểm đóng góp cộng dồn của các mã đang hiển thị tại từng mốc.</span><span class="impact-badge" id="impact-badge">DỮ LIỆU MẪU · CHƯA NỐI DNSE</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Tăng điểm</span><span><i class="impact-key down"></i>Giảm điểm</span><span class="muted">Mỗi ô chữ nhật = một mã tại một thời điểm</span></div><div class="impact-controls"><label for="impact-interval">Khung <input id="impact-interval" type="number" min="1" max="1440" step="1" value="1" inputmode="numeric" aria-label="Khung thời gian bản đồ, đơn vị phút"> phút</label><button id="impact-older" type="button">◀ Cũ hơn</button><button id="impact-latest" type="button">Mới nhất ▶</button><span id="impact-visible" class="muted">Đang dựng lịch sử mẫu…</span></div><div class="impact-chart-wrap" id="impact-chart-wrap"><svg class="impact-chart" id="impact-map" viewBox="0 0 1000 510" role="img" aria-label="Bản đồ minh họa tác động của các mã lên VN30 theo thời gian; xanh tăng, đỏ giảm"></svg></div><div class="impact-footer"><span id="impact-focus"><strong>Di chuột hoặc chạm vào ô</strong> để xem mã và số điểm đóng góp.</span><span class="muted" id="impact-description">12 mã, 186 mốc 1 phút minh họa · kéo thanh cuộn ngang để xem lịch sử · tổng chỉ gồm các mã đang vẽ, không phải mức biến động VN30 thực tế.</span></div></section>
 <section class="panel impact-area-panel" id="impact-area-panel"><h2><span class="box-number">8</span>100% Stacked Area Chart · tỷ trọng ảnh hưởng VN30</h2><div class="impact-intro"><span>Mỗi mốc chuẩn hóa tổng |điểm ảnh hưởng| của các mã DNSE gửi thành 100%; chiều tăng màu xanh, chiều giảm màu đỏ.</span><span class="muted">Dùng ô Khung ở box 7 · cuộn ngang đồng bộ</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Tỷ trọng kéo tăng</span><span><i class="impact-key down"></i>Tỷ trọng kéo giảm</span><span class="muted">Vùng liền nhau biểu diễn các mốc liên tiếp có dữ liệu</span></div><div class="impact-chart-wrap" id="impact-area-wrap"><svg class="impact-area-chart" id="impact-area" viewBox="0 0 1000 350" role="img" aria-label="Biểu đồ diện tích xếp chồng 100% tỷ trọng độ lớn điểm ảnh hưởng các mã lên VN30"></svg></div><div class="impact-footer"><span id="impact-area-focus"><strong>Di chuột hoặc chạm vào vùng màu</strong> để xem mã, điểm và tỷ trọng.</span><span class="muted" id="impact-area-description">Chỉ chuẩn hóa các mã có trong bản tin DNSE; mã vắng mặt không được coi là 0 điểm.</span></div></section>
-<section class="panel contribution-panel" id="contribution-panel"><h2><span class="box-number">10</span>Index Contribution Chart · đóng góp vào VN30</h2><div class="impact-intro"><span>Ảnh chụp mới nhất từ DNSE · điểm kéo tăng sang phải, điểm kéo giảm sang trái trục 0.</span><span class="impact-badge" id="contribution-status">ĐANG CHỜ DNSE</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Kéo tăng VN30</span><span><i class="impact-key down"></i>Kéo giảm VN30</span><span class="muted" id="contribution-time">Mốc nhận: —</span></div><div class="contribution-wrap"><svg class="contribution-chart" id="contribution-chart" viewBox="0 0 1000 340" role="img" aria-label="Biểu đồ thanh ngang phân kỳ điểm đóng góp của từng mã vào VN30 tại thời điểm mới nhất"></svg></div><div class="contribution-totals"><div class="contribution-total up"><span>Mức điểm đóng góp tăng</span><strong id="contribution-up-total">—</strong></div><div class="contribution-total down"><span>Mức điểm đóng góp giảm</span><strong id="contribution-down-total">—</strong></div></div><div class="impact-footer"><span class="muted" id="contribution-description">Chỉ gồm các mã có trong bản tin DNSE mới nhất; mã vắng mặt không được coi là 0 điểm.</span></div></section>
+<section class="panel contribution-panel" id="contribution-panel"><h2><span class="box-number">10</span>Index Contribution Chart · đóng góp vào VN30</h2><div class="impact-intro"><span>Mỗi mã chỉ hiện điểm ảnh hưởng trong bản tin DNSE mới nhất, ở cột Âm hoặc Dương.</span><span class="impact-badge" id="contribution-status">ĐANG CHỜ DNSE</span></div><div class="impact-legend"><span><i class="impact-key up"></i>Kéo tăng VN30</span><span><i class="impact-key down"></i>Kéo giảm VN30</span><span class="muted" id="contribution-scale">Thang: —</span><span class="muted" id="contribution-time">Mốc nhận: —</span></div><div class="contribution-wrap"><table class="contribution-table" aria-label="Điểm ảnh hưởng hiện tại của các mã lên VN30"><thead><tr><th scope="col">Mã</th><th scope="col">Âm</th><th scope="col">Dương</th></tr></thead><tbody id="contribution-rows"><tr><td colspan="3" class="empty">Đang chờ bản tin VN30…</td></tr></tbody></table></div><div class="contribution-totals"><div class="contribution-total up"><span>Tổng điểm đóng góp tăng<br><small>Hiện tại: <b id="contribution-up-total">—</b></small></span><span class="extreme"><small>Cao nhất phiên</small><strong id="contribution-up-peak">—</strong></span></div><div class="contribution-total down"><span>Tổng điểm đóng góp giảm<br><small>Hiện tại: <b id="contribution-down-total">—</b></small></span><span class="extreme"><small>Âm sâu nhất phiên</small><strong id="contribution-down-peak">—</strong></span></div></div><div class="impact-footer"><span class="muted" id="contribution-description">Độ dài thanh theo |điểm ảnh hưởng| trên cùng thang; dấu — là phía không có điểm ở bản tin hiện tại.</span></div></section>
 <section class="panel breadth-panel" id="breadth-panel"><h2><span class="box-number">11</span>Số mã tăng / giảm / đứng giá · VN30</h2><div class="impact-intro">Số lượng theo bản tin chỉ số DNSE mới nhất qua WSS. Mỗi thanh tính tỷ lệ trong tổng số mã mà bản tin đó báo cáo.</div><div class="breadth-grid"><div class="breadth-card"><h3>VN30 chính thức</h3><div class="breadth-time" id="breadth-market-time">Đang chờ dữ liệu…</div><div class="breadth-bar" id="breadth-market-bar" role="img" aria-label="Số mã tăng, giảm, đứng giá của VN30 chính thức"></div><div class="breadth-counts" id="breadth-market-counts"></div></div><div class="breadth-card"><h3>VN30 dự tính</h3><div class="breadth-time" id="breadth-estimated-time">Đang chờ dữ liệu…</div><div class="breadth-bar" id="breadth-estimated-bar" role="img" aria-label="Số mã tăng, giảm, đứng giá của VN30 dự tính"></div><div class="breadth-counts" id="breadth-estimated-counts"></div></div></div></section>
 <section class="panel basis-panel" id="basis-panel"><h2><span class="box-number">12</span>Phái sinh quanh đường chuẩn VN30 · 1D</h2><div class="basis-controls"><label for="basis-day">Ngày <input id="basis-day" type="date" aria-label="Ngày lịch sử basis"></label><span id="basis-status" class="muted">Đang chờ dữ liệu…</span></div><div class="basis-legend"><span class="vn30">━ VN30 · đường chuẩn 0</span><span class="positive">■ Phái sinh cao hơn VN30</span><span class="negative">■ Phái sinh thấp hơn VN30</span></div><div class="basis-chart-wrap"><svg class="basis-chart" id="basis-chart" viewBox="0 0 1000 370" role="img" aria-label="Vùng xanh khi phái sinh cao hơn VN30, vùng đỏ khi thấp hơn, từ 09 giờ đến 14 giờ 45"></svg></div><div class="impact-footer"><span id="basis-latest">Độ lệch cuối: —</span><span class="muted">Trục dọc là điểm lệch: phái sinh − VN30 chính thức. Khoảng thiếu dữ liệu để trống.</span></div></section>
 <p class="note">Luồng này gửi bản ghi mới từ RAM, không chờ SQLite và không dựng biểu đồ/đánh giá. DOM có thể cuộn qua toàn bộ mức giá BID/ASK đã xuất hiện trong Quote của phiên, đồng thời giữ 61 mức quanh best bid/ask để xem vùng giá hiện tại. Khoảng giá chưa ghi nhận được thu gọn; nút “Về giá hiện tại” đưa bạn trở lại best BID/ASK. Số BID/ASK màu xám là khối lượng cuối cùng đã ghi nhận tại mức giá đó khi nó không còn trong Quote hiện tại; không coi là lệnh đang chờ. MAX được nạp từ Quote đã lưu từ đầu phiên và tiếp tục cập nhật realtime. Mọi Quote đều được tính vào MAX; DOM vẽ Quote mới nhất trước mỗi lần làm mới màn hình. Dấu *: giờ nguồn DNSE và đồng hồ máy mở trang có thể lệch với đồng hồ server; số âm hoặc lớn bất thường cần kiểm tra đồng hồ. Nhìn “SDK → cache RAM” và “Cache RAM → server gửi” để xác định chậm trong server; nhìn số Quote mỗi đợt và khoảng cách nhận để xác định nhịp dữ liệu đầu vào.</p>
+<section class="panel ohlcv-history"><h2><span class="box-number">15</span>Lịch sử nến 1 phút có volume &gt; 1.500 HĐ</h2><div class="ohlcv-history-summary" id="ohlcv-history-summary">Đang tải nến đã thu trong phiên…</div><div class="ohlcv-history-wrap"><table class="ohlcv-history-table"><thead><tr><th>Giờ nến</th><th>Trạng thái</th><th>Volume (HĐ)</th><th>Giá mở</th><th>Giá đóng</th><th>Đóng − mở (điểm)</th><th>Đóng − mở (%)</th></tr></thead><tbody id="ohlcv-history"><tr><td colspan="7" class="empty">Đang tải…</td></tr></tbody></table></div></section>
+<section class="panel trade-speed" id="trade-speed-panel"><h2><span><span class="box-number">16</span>Tốc độ khớp lệnh theo thời gian</span><button class="trade-speed-fullscreen" id="trade-speed-fullscreen" type="button" aria-pressed="false">⛶ Toàn màn hình</button></h2><div class="trade-speed-controls"><label for="trade-speed-range">Khoảng xem <select id="trade-speed-range"><option value="300">5 phút</option><option value="900" selected>15 phút</option><option value="3600">60 phút</option><option value="all">Toàn phiên đã thu</option></select></label><span id="trade-speed-status" class="muted">Đang tải lịch sử giao dịch…</span></div><div class="trade-speed-metrics"><div>Số lệnh khớp / giây<strong id="trade-speed-orders">—</strong></div><div>Số hợp đồng khớp / giây<strong id="trade-speed-contracts">—</strong></div></div><div class="trade-speed-legend"><span><i class="orders"></i>Lệnh/s</span><span><i class="contracts"></i>HĐ/s</span><span><i class="ema"></i>EMA20 · trung bình 20 giây</span></div><div class="trade-speed-chart-wrap"><svg class="trade-speed-chart" id="trade-speed-chart" viewBox="0 0 1000 320" role="img" aria-label="Hai biểu đồ theo giây: số lệnh khớp và số hợp đồng khớp, mỗi biểu đồ có đường EMA20"></svg></div><div class="trade-speed-footer"><span id="trade-speed-hover">Di chuột vào biểu đồ để xem từng giây.</span><span class="muted">Theo giờ nguồn Trade Extra · giây không ghi nhận khớp = 0 trong dữ liệu đã thu.</span></div></section>
+<section class="panel vn30-stocks"><h2><span class="box-number">17</span>30 cổ phiếu thành phần VN30</h2><div class="vn30-stocks-intro"><span id="vn30-stocks-status">Đang tải giá VN30…</span><span><span id="vn30-stocks-source-label">Danh sách VN30</span> · <a id="vn30-stocks-source-link" href="https://iboard-query.ssi.com.vn/stock/group/VN30" target="_blank" rel="noopener noreferrer">Nguồn danh sách</a></span></div><div class="vn30-stocks-wrap"><table class="vn30-stocks-table"><thead id="vn30-stocks-head"><tr><th>Mã</th><th>Giá khớp</th><th>Tham chiếu</th><th>Thấp nhất</th><th>Cao nhất</th><th>± % so với tham chiếu</th><th>Giờ khớp</th></tr></thead><tbody id="vn30-stocks-rows"><tr><td colspan="7" class="empty">Đang tải…</td></tr></tbody></table></div></section>
 <h2><span class="box-number">1</span>Thông số độ trễ và nhịp Quote</h2><div class="grid">
  <div class="metric"><span>DNSE → SDK*</span><b id="source-lag">—</b></div>
  <div class="metric"><span>SDK → cache RAM</span><b id="project-lag">—</b></div>
@@ -228,8 +310,8 @@ const impactMinute=ms=>{const [hour,minute]=new Date(ms).toLocaleTimeString('en-
 const impactSign=n=>(n>0?'+':'')+n.toFixed(2);
 const sessionMinute=minute=>minute<=690?minute:minute<780?690:minute-90;
 let impactBaseMinute=555,impactVisibleMinutes=[],impactWasRendered=false,impactIntervalMinutes=1;
-let influenceDay=null,influenceStatus='offline',influenceHistoryLoaded=false,influenceSocket=null,influenceRetry=500,influencePaintQueued=false,latestInfluence=null;
-const influenceBuckets=new Map(),impactWrap=$('impact-chart-wrap'),impactAreaWrap=$('impact-area-wrap');
+let influenceDay=null,influenceStatus='offline',influenceHistoryLoaded=false,influenceSocket=null,influenceRetry=500,influencePaintQueued=false,latestInfluence=null,influenceTotalExtrema=null;
+const influenceBuckets=new Map(),influencePositivePeaks=new Map(),influenceNegativePeaks=new Map(),impactWrap=$('impact-chart-wrap'),impactAreaWrap=$('impact-area-wrap');
 const impactX=minute=>75+(sessionMinute(minute)-sessionMinute(impactBaseMinute))*36/impactIntervalMinutes+(minute>=780&&impactBaseMinute<780?68:0);
 function impactValue(series,minute){
  const after=impactAnchorMinutes.findIndex(anchor=>anchor>=minute);
@@ -256,14 +338,15 @@ function impactColumns(){
 const impactStatusLabel=()=>influenceStatus==='connected'?'DNSE VN30/1D · REALTIME':
  influenceStatus==='offline'||influenceStatus==='stopped'?'VN30 · DỮ LIỆU ĐÃ LƯU':'VN30 · ĐANG NỐI DNSE';
 function renderContributionChart(){
- const svg=$('contribution-chart'),sampleMinute=impactSampleMinutes[impactSampleMinutes.length-1];
+ const body=$('contribution-rows'),sampleMinute=impactSampleMinutes[impactSampleMinutes.length-1];
  const snapshot=impactDemo?{received_ms:sampleMinute,
   items:impactSample.map(([ticker,series])=>[ticker,impactValue(series,sampleMinute)])}:latestInfluence;
  set('contribution-status',impactDemo?'DỮ LIỆU MẪU':snapshot?impactStatusLabel():'ĐANG CHỜ DNSE');
  if(!snapshot){
-  svg.setAttribute?.('viewBox','0 0 1000 340');svg.style?.setProperty?.('--contribution-height','340px');
-  svg.innerHTML='<text class="contribution-axis" x="500" y="170" text-anchor="middle">Chưa có bản tin ảnh hưởng VN30 trong phiên này</text>';
-  set('contribution-time','Mốc nhận: —');set('contribution-up-total','—');set('contribution-down-total','—');return;
+  body.innerHTML='<tr><td colspan="3" class="empty">Chưa có bản tin ảnh hưởng VN30 trong phiên này</td></tr>';
+  set('contribution-scale','Thang: —');set('contribution-time','Mốc nhận: —');
+  set('contribution-up-total','—');set('contribution-down-total','—');
+  set('contribution-up-peak','—');set('contribution-down-peak','—');return;
  }
  const items=snapshot.items.filter(item=>Array.isArray(item)&&/^[A-Z0-9]{1,12}$/.test(item[0])&&
   typeof item[1]==='number'&&Number.isFinite(item[1])).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
@@ -273,30 +356,24 @@ function renderContributionChart(){
  const downTotal=items.reduce((sum,[,value])=>sum+Math.min(0,value),0);
  set('contribution-up-total',`${impactSign(upTotal)} điểm`);
  set('contribution-down-total',`${impactSign(downTotal)} điểm`);
- set('contribution-description',`${items.length} mã trong bản tin mới nhất · đơn vị: điểm VN30 · mã vắng mặt không được coi là 0 điểm.`);
- if(!items.length){svg.innerHTML='<text class="contribution-axis" x="500" y="170" text-anchor="middle">Bản tin mới nhất không có mã hợp lệ</text>';return;}
- const height=Math.max(260,72+items.length*28),zero=520,side=305;
- const maxAbs=Math.max(...items.map(([,value])=>Math.abs(value)));
- const axisMax=Math.max(.1,Math.ceil(maxAbs*10)/10);
- const x=value=>zero+value/axisMax*side;
- const parts=[];
- for(const value of [-axisMax,-axisMax/2,0,axisMax/2,axisMax]){
-  const px=x(value),isZero=value===0;
-  parts.push(`<line class="${isZero?'contribution-zero':'contribution-grid'}" x1="${px}" y1="39" x2="${px}" y2="${height-22}"/>`);
-  parts.push(`<text class="contribution-axis" x="${px}" y="23" text-anchor="middle">${impactSign(value)}</text>`);
- }
- items.forEach(([ticker,value],i)=>{
-  const center=56+i*28,width=Math.abs(value)/axisMax*side;
-  const direction=value>0?'up':value<0?'down':'flat';
-  const barX=value<0?zero-width:zero,barWidth=value===0?2:width;
-  const labelX=value<0?barX-8:zero+barWidth+8;
-  parts.push(`<text class="contribution-ticker" x="30" y="${center+4}">${ticker}</text>`);
-  parts.push(`<rect class="contribution-bar ${direction}" x="${barX}" y="${center-9}" width="${barWidth}" height="18" tabindex="0" data-ticker="${ticker}" data-contribution="${impactSign(value)}" aria-label="${ticker}: ${impactSign(value)} điểm"><title>${ticker}: ${impactSign(value)} điểm VN30</title></rect>`);
-  parts.push(`<text class="contribution-value ${direction}" x="${labelX}" y="${center+4}" text-anchor="${value<0?'end':'start'}">${impactSign(value)}</text>`);
- });
- svg.setAttribute?.('viewBox',`0 0 1000 ${height}`);
- svg.style?.setProperty?.('--contribution-height',`${height}px`);
- svg.innerHTML=parts.join('');
+ set('contribution-up-peak',`${impactSign(influenceTotalExtrema?.up??upTotal)} điểm`);
+ set('contribution-down-peak',`${impactSign(influenceTotalExtrema?.down??downTotal)} điểm`);
+ set('contribution-description',`${items.length} mã trong bản tin mới nhất · số trong ngoặc là cực trị đã ghi nhận của mỗi chiều, kể cả khi điểm hiện tại đổi dấu · thanh chỉ biểu diễn điểm hiện tại.`);
+ if(!items.length){body.innerHTML='<tr><td colspan="3" class="empty">Bản tin mới nhất không có mã hợp lệ</td></tr>';set('contribution-scale','Thang: —');return;}
+ const axisMax=Math.max(.01,Math.ceil(Math.max(...items.map(([,value])=>Math.abs(value)))*100)/100);
+ set('contribution-scale',`Thang: ±${axisMax.toFixed(2)} điểm`);
+ body.innerHTML=items.map(([ticker,value])=>{
+  const width=(Math.abs(value)/axisMax*100).toFixed(2);
+  const demoSeries=impactDemo?impactSample.find(item=>item[0]===ticker)?.[1]:null;
+  const negativePeak=demoSeries?Math.min(value,...demoSeries):Math.min(value,influenceNegativePeaks.get(ticker)||0);
+  const negative=value<0?`<div class="contribution-side down"><i class="bar" style="width:${width}%"></i><strong>${impactSign(value)} <span class="contribution-peak">(${impactSign(negativePeak)})</span></strong></div>`:
+   negativePeak<0?`<span class="contribution-only-peak">(${impactSign(negativePeak)})</span>`:'—';
+  const peak=demoSeries?Math.max(value,...demoSeries):Math.max(value,influencePositivePeaks.get(ticker)||0);
+  const positive=value>0?`<div class="contribution-side up"><i class="bar" style="width:${width}%"></i><strong>${impactSign(value)} <span class="contribution-peak">(${impactSign(peak)})</span></strong></div>`:
+   peak>0?`<span class="contribution-only-peak">(${impactSign(peak)})</span>`:'—';
+  const cells=`<td class="${negativePeak<0?'down':'flat'}">${negative}</td><td class="${peak>0?'up':'flat'}">${positive}</td>`;
+  return `<tr data-ticker="${ticker}" data-contribution="${impactSign(value)}"><td class="ticker">${ticker}${value===0?' <small class="current-zero">0.00</small>':''}</td>${cells}</tr>`;
+ }).join('');
 }
 function renderImpactMap(){
  const columns=impactColumns(),svg=$('impact-map');
@@ -479,6 +556,38 @@ function mergeInfluence(snapshot){
  if(old&&old.received_ms>snapshot.received_ms)return false;
  influenceBuckets.set(bucket,snapshot);return true;
 }
+function trackInfluencePositivePeaks(snapshot){
+ if(!snapshot||!Array.isArray(snapshot.items))return false;
+ let changed=false;
+ for(const item of snapshot.items){
+  if(!Array.isArray(item)||!Number.isFinite(item[1])||item[1]<=0)continue;
+  const [ticker,value]=item,previous=influencePositivePeaks.get(ticker)||0;
+  if(value>previous){influencePositivePeaks.set(ticker,value);changed=true;}
+ }
+ return changed;
+}
+function trackInfluenceNegativePeaks(snapshot){
+ if(!snapshot||!Array.isArray(snapshot.items))return false;
+ let changed=false;
+ for(const item of snapshot.items){
+  if(!Array.isArray(item)||!Number.isFinite(item[1])||item[1]>=0)continue;
+  const [ticker,value]=item,previous=influenceNegativePeaks.get(ticker)||0;
+  if(value<previous){influenceNegativePeaks.set(ticker,value);changed=true;}
+ }
+ return changed;
+}
+function trackInfluenceTotalExtrema(snapshot){
+ if(!snapshot||!Array.isArray(snapshot.items))return false;
+ let up=0,down=0;
+ for(const item of snapshot.items){
+  if(!Array.isArray(item)||!Number.isFinite(item[1]))continue;
+  up+=Math.max(0,item[1]);down+=Math.min(0,item[1]);
+ }
+ if(!influenceTotalExtrema){influenceTotalExtrema={up,down};return true;}
+ const nextUp=Math.max(influenceTotalExtrema.up,up),nextDown=Math.min(influenceTotalExtrema.down,down);
+ if(nextUp===influenceTotalExtrema.up&&nextDown===influenceTotalExtrema.down)return false;
+ influenceTotalExtrema={up:nextUp,down:nextDown};return true;
+}
 function scheduleInfluencePaint(){
  if(influencePaintQueued)return;
  influencePaintQueued=true;
@@ -504,16 +613,31 @@ function connectInfluence(){
   let data;try{data=JSON.parse(message.data);}catch{return;}
   if(data.type==='hello'){
    if(data.day!==influenceDay){
-    influenceDay=data.day;influenceBuckets.clear();latestInfluence=null;influenceHistoryLoaded=false;impactWasRendered=false;
+    influenceDay=data.day;influenceBuckets.clear();influencePositivePeaks.clear();influenceNegativePeaks.clear();influenceTotalExtrema=null;latestInfluence=null;influenceHistoryLoaded=false;impactWasRendered=false;
     set('impact-focus','Di chuột hoặc chạm vào ô để xem mã và số điểm đóng góp.');
     set('impact-area-focus','Di chuột hoặc chạm vào vùng màu để xem mã, điểm và tỷ trọng.');
    }
    influenceStatus=data.status;
+   influencePositivePeaks.clear();
+   influenceNegativePeaks.clear();
+   for(const [ticker,values] of Object.entries(data.extrema||{}))
+    if(/^[A-Z0-9]{1,12}$/.test(ticker)&&Array.isArray(values)&&values.length===2){
+     if(Number.isFinite(values[0])&&values[0]<0)influenceNegativePeaks.set(ticker,values[0]);
+     if(Number.isFinite(values[1])&&values[1]>0)influencePositivePeaks.set(ticker,values[1]);
+    }
+   influenceTotalExtrema=data.total_extrema&&Number.isFinite(data.total_extrema.up)&&
+    Number.isFinite(data.total_extrema.down)?
+    {up:data.total_extrema.up,down:data.total_extrema.down}:null;
+   trackInfluenceTotalExtrema(data.latest);trackInfluencePositivePeaks(data.latest);trackInfluenceNegativePeaks(data.latest);
    mergeInfluence(data.latest);renderImpactMap();renderContributionChart();loadInfluenceHistory(data.day);return;
   }
   if(data.type==='events'){
    let changed=false;
-   for(const snapshot of data.events||[])changed=mergeInfluence(snapshot)||changed;
+   for(const snapshot of data.events||[]){
+    const merged=mergeInfluence(snapshot),peaked=trackInfluenceTotalExtrema(snapshot);
+    const positivePeaked=trackInfluencePositivePeaks(snapshot),negativePeaked=trackInfluenceNegativePeaks(snapshot);
+    changed=merged||peaked||positivePeaked||negativePeaked||changed;
+   }
    if(changed)scheduleInfluencePaint();
    if(data.lost)loadInfluenceHistory(influenceDay);
   }
@@ -533,6 +657,8 @@ renderImpactMap();
 renderContributionChart();
 let socket=null,retry=500,quoteCount=0,tradeCount=0,lostTotal=0,lastQuoteReceived=null,burst=0,log=[];
 let lastTradePrice=null,lastTradeSourceMs=null,lastTradeStats=null,referencePrice=null,ohlcvLatest=null,rawDay=null,bookBids=[],bookAsks=[],sessionKey=null,lastEventSource=null,lastTradeStatsSource=-1;
+const ohlcvCandles=new Map();
+let rawServerClock=null;
 let indexMarket=null,indexEstimated=null,indexSocket=null,indexRetry=500,indexDay=null,indexStatus='offline';
 const indexClock=ms=>ms==null?'—':new Date(ms).toLocaleTimeString('vi-VN',{timeZone:'Asia/Bangkok',hour12:false});
 const indexNumber=(n,digits=2)=>n==null?'—':Number(n).toLocaleString('vi-VN',{
@@ -561,7 +687,7 @@ function renderOhlcvAlert(){
  $('ohlcv-alert').className='ohlcv-alert'+(alert?' is-warning':'');
  if(!candle){
   set('ohlcv-minute','Đang chờ nến…');set('ohlcv-volume','—');
-  set('ohlcv-state','Chưa có dữ liệu OHLCV');return;
+  set('ohlcv-state','Chưa có dữ liệu OHLCV');renderOhlcvCountdown();return;
  }
  const minute=new Date(candle.minute_ms).toLocaleTimeString('vi-VN',{
   timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -569,14 +695,287 @@ function renderOhlcvAlert(){
  set('ohlcv-volume',`${candle.volume.toLocaleString('vi-VN')} HĐ`);
  set('ohlcv-state',alert?'CẢNH BÁO: VOLUME VƯỢT 1.500 HĐ':
      candle.closed?'Nến đã đóng':'Volume chưa vượt ngưỡng');
+ renderOhlcvCountdown();
+}
+function renderOhlcvCountdown(){
+ const candle=ohlcvLatest;
+ if(!candle){set('ohlcv-countdown','—');return;}
+ if(candle.closed){set('ohlcv-countdown','Đã đóng');return;}
+ const now=rawServerClock?rawServerClock.sent_ms+performance.now()-rawServerClock.perf_ms:Date.now();
+ const remaining=Math.max(0,Math.ceil((candle.minute_ms+60000-now)/1000));
+ set('ohlcv-countdown',remaining?`${remaining} s`:'0 s · chờ xác nhận');
+}
+if(typeof setInterval==='function')setInterval(renderOhlcvCountdown,1000);
+function ohlcvKey(candle){return [Number(!!candle.closed),candle.updated_ms,candle.received_ms??0];}
+function validOhlcv(candle){
+ return !!candle&&Number.isSafeInteger(candle.minute_ms)&&Number.isFinite(candle.updated_ms)&&
+  Number.isSafeInteger(candle.volume)&&candle.volume>=0&&
+  Number.isFinite(candle.open)&&candle.open>0&&Number.isFinite(candle.close)&&candle.close>0;
+}
+function mergeOhlcv(candle){
+ if(!validOhlcv(candle))return false;
+ const old=ohlcvCandles.get(candle.minute_ms);
+ if(old){
+  const previous=ohlcvKey(old),incoming=ohlcvKey(candle);
+  if(incoming[0]<previous[0]||incoming[0]===previous[0]&&
+    (incoming[1]<previous[1]||incoming[1]===previous[1]&&incoming[2]<previous[2]))return false;
+ }
+ ohlcvCandles.set(candle.minute_ms,candle);
+ return true;
+}
+function renderOhlcvHistory(){
+ const rows=[...ohlcvCandles.values()].filter(candle=>candle.volume>1500)
+  .sort((a,b)=>b.minute_ms-a.minute_ms);
+ set('ohlcv-history-summary',`${rows.length.toLocaleString('vi-VN')} nến vượt 1.500 HĐ trong phiên đã thu · chênh lệch = giá đóng − giá mở`);
+ const fixed=(value,digits)=>value.toLocaleString('vi-VN',{
+  minimumFractionDigits:digits,maximumFractionDigits:digits});
+ const signed=(value,digits)=>`${value>0?'+':''}${fixed(value,digits)}`;
+ $('ohlcv-history').innerHTML=rows.map(candle=>{
+  const minute=new Date(candle.minute_ms).toLocaleTimeString('vi-VN',{
+   timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false});
+  const delta=Number((candle.close-candle.open).toFixed(1));
+  const pct=Number((delta/candle.open*100).toFixed(2));
+  const direction=delta>0?'up':delta<0?'down':'flat';
+  return `<tr><td>${minute}</td><td class="${candle.closed?'':'open-candle'}">${candle.closed?'Đã đóng':'Đang hình thành'}</td>`+
+   `<td>${candle.volume.toLocaleString('vi-VN')}</td><td>${fixed(candle.open,1)}</td>`+
+   `<td>${fixed(candle.close,1)}</td><td class="${direction}">${signed(delta,1)}</td>`+
+   `<td class="${direction}">${signed(pct,2)}%</td></tr>`;
+ }).join('')||'<tr><td colspan="7" class="empty">Chưa có nến 1 phút nào vượt 1.500 HĐ trong dữ liệu đã thu.</td></tr>';
+}
+function loadOhlcvHistory(day,symbol){
+ if(typeof fetch!=='function')return;
+ const expected=symbol+':'+day;
+ fetch('/api/ohlcv-1m',{cache:'no-store'}).then(response=>{
+  if(!response.ok)throw Error('OHLCV history unavailable');return response.json();
+ }).then(data=>{
+  if(sessionKey!==expected||data.day!==day||data.symbol!==symbol)return;
+  let changed=false;
+  for(const candle of data.candles||[])changed=mergeOhlcv(candle)||changed;
+  if(changed||!ohlcvCandles.size)renderOhlcvHistory();
+ }).catch(()=>{
+  if(sessionKey===expected)set('ohlcv-history-summary','Không tải được lịch sử nến; đang chờ dữ liệu realtime.');
+ });
+}
+const tradeSpeedSeconds=new Map();
+let tradeSpeedPending=[],tradeSpeedReady=false,tradeSpeedView=null,tradeSpeedLoadId=0;
+function applyTradeSpeed(event){
+ if(!Number.isSafeInteger(event.source_ms)||!Number.isSafeInteger(event.qty)||event.qty<=0)return;
+ const second=Math.floor(event.source_ms/1000)*1000;
+ const row=tradeSpeedSeconds.get(second)||[0,0];
+ row[0]++;row[1]+=event.qty;tradeSpeedSeconds.set(second,row);
+}
+function recordTradeSpeed(event){
+ if(!tradeSpeedReady)tradeSpeedPending.push(event);
+ else applyTradeSpeed(event);
+}
+function loadTradeSpeed(day,symbol){
+ const expected=symbol+':'+day,loadId=++tradeSpeedLoadId;
+ tradeSpeedSeconds.clear();tradeSpeedPending=[];tradeSpeedReady=false;
+ set('trade-speed-status','Đang tải lịch sử giao dịch…');
+ set('trade-speed-orders','—');set('trade-speed-contracts','—');
+ if(typeof fetch!=='function')return;
+ fetch('/api/trade-speed',{cache:'no-store'}).then(response=>{
+  if(!response.ok)throw Error('Trade speed history unavailable');return response.json();
+ }).then(data=>{
+  if(loadId!==tradeSpeedLoadId||sessionKey!==expected||data.day!==day||data.symbol!==symbol)return;
+  for(const row of data.seconds||[]){
+   if(Array.isArray(row)&&Number.isSafeInteger(row[0])&&Number.isSafeInteger(row[1])&&
+      Number.isSafeInteger(row[2])&&row[1]>0&&row[2]>0)tradeSpeedSeconds.set(row[0],[row[1],row[2]]);
+  }
+  for(const event of tradeSpeedPending)if(event.seq>data.cursor)applyTradeSpeed(event);
+  tradeSpeedPending=[];tradeSpeedReady=true;renderTradeSpeed();
+ }).catch(()=>{
+  if(loadId!==tradeSpeedLoadId||sessionKey!==expected)return;
+  for(const event of tradeSpeedPending)applyTradeSpeed(event);
+  tradeSpeedPending=[];tradeSpeedReady=true;
+  set('trade-speed-status','Không tải được lịch sử; đang hiển thị dữ liệu realtime.');
+  renderTradeSpeed();
+ });
+}
+function renderTradeSpeed(){
+ if(!tradeSpeedReady)return;
+ const chart=$('trade-speed-chart'),all=[...tradeSpeedSeconds.keys()].sort((a,b)=>a-b);
+ if(!all.length){
+  set('trade-speed-orders','—');set('trade-speed-contracts','—');
+  set('trade-speed-status','Đang chờ Trade Extra.');
+  chart.innerHTML='<text x="500" y="160" text-anchor="middle" fill="#555">Chưa có giao dịch trong phiên đã thu</text>';
+  tradeSpeedView=null;return;
+ }
+ const now=rawServerClock?rawServerClock.sent_ms+performance.now()-rawServerClock.perf_ms:Date.now();
+ const current=Math.floor(now/1000)*1000,last=all[all.length-1];
+ const range=$('trade-speed-range').value||'900',span=range==='all'?null:Number(range);
+ const end=span?(current-last>span*1000?last:Math.max(current,last)):last;
+ const start=span?end-(span-1)*1000:all[0];
+ const steps=Math.max(1,Math.round((end-start)/1000));
+ const alpha=2/21;
+ let maxOrders=1,maxContracts=1,visible=0,emaOrders=null,emaContracts=null;
+ const samples=[];
+ for(let second=Math.min(start,all[0]);second<=end;second+=1000){
+  const row=tradeSpeedSeconds.get(second)||[0,0];
+  if(second>=all[0]){
+   emaOrders=emaOrders===null?row[0]:alpha*row[0]+(1-alpha)*emaOrders;
+   emaContracts=emaContracts===null?row[1]:alpha*row[1]+(1-alpha)*emaContracts;
+  }
+  if(second<start)continue;
+  const sample=[second,row[0],row[1],emaOrders??0,emaContracts??0];
+  samples.push(sample);
+  if(row[0])visible++;
+  maxOrders=Math.max(maxOrders,sample[1],sample[3]);
+  maxContracts=Math.max(maxContracts,sample[2],sample[4]);
+ }
+ const currentRow=tradeSpeedSeconds.get(current)||[0,0];
+ set('trade-speed-orders',currentRow[0].toLocaleString('vi-VN'));
+ set('trade-speed-contracts',currentRow[1].toLocaleString('vi-VN'));
+ set('trade-speed-status',`${visible.toLocaleString('vi-VN')} giây có khớp trong khoảng xem · dữ liệu cuối ${indexClock(last)}`);
+ const lines=(index,maximum,top,bottom)=>{
+  let path='';
+  for(const sample of samples){
+   const x=60+(sample[0]-start)/1000/steps*910;
+   const y=bottom-sample[index]/maximum*(bottom-top);
+   path+=(path?'L':'M')+x.toFixed(2)+' '+y.toFixed(2);
+  }
+  return path;
+ };
+ const ticks=[0,.25,.5,.75,1].map(fraction=>{
+  const x=60+fraction*910,at=start+Math.round(steps*fraction)*1000;
+  return `<line class="grid-line" x1="${x}" y1="28" x2="${x}" y2="282"/>`+
+   `<text x="${x}" y="306" text-anchor="middle" fill="#555">${indexClock(at)}</text>`;
+ }).join('');
+ chart.innerHTML=`<line class="axis" x1="60" y1="145" x2="970" y2="145"/>`+
+  `<line class="axis" x1="60" y1="282" x2="970" y2="282"/>${ticks}`+
+  `<text x="60" y="18" fill="#1549a4">Lệnh/s · tối đa ${maxOrders.toLocaleString('vi-VN')}</text>`+
+  `<text x="60" y="173" fill="#087135">HĐ/s · tối đa ${maxContracts.toLocaleString('vi-VN')}</text>`+
+  `<path class="orders-line" d="${lines(1,maxOrders,33,145)}"/>`+
+  `<path class="ema-line" d="${lines(3,maxOrders,33,145)}"/>`+
+  `<path class="contracts-line" d="${lines(2,maxContracts,185,282)}"/>`+
+  `<path class="ema-line" d="${lines(4,maxContracts,185,282)}"/>`;
+ tradeSpeedView={start,end,samples};
+}
+$('trade-speed-range').onchange=renderTradeSpeed;
+$('trade-speed-chart').onmousemove=event=>{
+ if(!tradeSpeedView)return;
+ const rect=$('trade-speed-chart').getBoundingClientRect();
+ const x=(event.clientX-rect.left)/rect.width*1000;
+ const {start,end,samples}=tradeSpeedView;
+ const second=start+Math.round(Math.max(0,Math.min(1,(x-60)/910))*((end-start)/1000))*1000;
+ const sample=samples[Math.round((second-start)/1000)]||[second,0,0,0,0];
+ const decimal=value=>value.toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2});
+ set('trade-speed-hover',`${indexClock(second)} · ${sample[1].toLocaleString('vi-VN')} lệnh/s (EMA20 ${decimal(sample[3])}) · ${sample[2].toLocaleString('vi-VN')} HĐ/s (EMA20 ${decimal(sample[4])})`);
+};
+$('trade-speed-chart').onmouseleave=()=>set('trade-speed-hover','Di chuột vào biểu đồ để xem từng giây.');
+if(typeof setInterval==='function')setInterval(renderTradeSpeed,1000);
+const tradeSpeedPanel=$('trade-speed-panel'),tradeSpeedFullscreen=$('trade-speed-fullscreen');
+let tradeSpeedOverlay=false;
+function syncTradeSpeedFullscreen(){
+ const expanded=document.fullscreenElement===tradeSpeedPanel||tradeSpeedOverlay;
+ tradeSpeedPanel.className='panel trade-speed'+(tradeSpeedOverlay?' is-expanded':'');
+ tradeSpeedFullscreen.textContent=expanded?'↙ Thu nhỏ':'⛶ Toàn màn hình';
+ tradeSpeedFullscreen.setAttribute('aria-pressed',expanded?'true':'false');
+}
+tradeSpeedFullscreen.onclick=async()=>{
+ if(document.fullscreenElement===tradeSpeedPanel){
+  await document.exitFullscreen();syncTradeSpeedFullscreen();return;
+ }
+ if(tradeSpeedOverlay){tradeSpeedOverlay=false;syncTradeSpeedFullscreen();return;}
+ if(typeof tradeSpeedPanel.requestFullscreen==='function'){
+  try{await tradeSpeedPanel.requestFullscreen();syncTradeSpeedFullscreen();return;}catch{}
+ }
+ tradeSpeedOverlay=true;syncTradeSpeedFullscreen();
+};
+document.addEventListener('fullscreenchange',syncTradeSpeedFullscreen);
+window.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&tradeSpeedOverlay){tradeSpeedOverlay=false;syncTradeSpeedFullscreen();}
+});
+let vn30StockLoading=false;
+const vn30SortColumns=[['symbol','Mã'],['last','Giá khớp'],['reference','Tham chiếu'],
+ ['low','Thấp nhất'],['high','Cao nhất'],['change','± % so với tham chiếu'],
+ ['trade_source_ms','Giờ khớp']];
+const vn30Sort={key:'symbol',direction:1};
+let vn30StockData=null;
+function renderVn30SortHead(){
+ $('vn30-stocks-head').innerHTML='<tr>'+vn30SortColumns.map(([key,label])=>{
+  const active=vn30Sort.key===key;
+  const arrow=active?(vn30Sort.direction===1?'▲':'▼'):'↕';
+  const aria=active?` aria-sort="${vn30Sort.direction===1?'ascending':'descending'}"`:'';
+  return `<th${aria}><button type="button" data-sort="${key}" title="Sắp xếp theo ${label}">${label} <span class="sort-arrow" aria-hidden="true">${arrow}</span></button></th>`;
+ }).join('')+'</tr>';
+}
+function vn30SortValue(row){
+ const key=vn30Sort.key;
+ if(key==='symbol')return row.symbol;
+ if(key==='trade_source_ms')return Number.isSafeInteger(row.trade_source_ms)?row.trade_source_ms:null;
+ if(key==='change')return typeof row.last==='number'&&row.last>0&&
+  typeof row.reference==='number'&&row.reference>0?
+  (row.last-row.reference)/row.reference*100:null;
+ const value=row[key];
+ return typeof value==='number'&&Number.isFinite(value)&&value>0?value:null;
+}
+$('vn30-stocks-head').onclick=event=>{
+ const key=event.target.closest?.('button[data-sort]')?.dataset.sort;
+ if(!vn30SortColumns.some(([candidate])=>candidate===key))return;
+ vn30Sort.direction=vn30Sort.key===key?-vn30Sort.direction:key==='symbol'?1:-1;
+ vn30Sort.key=key;
+ renderVn30SortHead();
+ if(vn30StockData)renderVn30Stocks(vn30StockData);
+};
+renderVn30SortHead();
+function renderVn30Stocks(data){
+ if(!Array.isArray(data.stocks)||data.stocks.length!==30)throw Error('Invalid VN30 stock list');
+ vn30StockData=data;
+ set('vn30-stocks-source-label',data.period==='7/2026'?'Danh sách HOSE kỳ 7/2026':
+  data.period==='SSI VN30 (lưu gần nhất)'?'Danh sách SSI lưu gần nhất':'Danh sách SSI VN30');
+ if(typeof data.source==='string'&&data.source.startsWith('https://'))
+  $('vn30-stocks-source-link').href=data.source;
+ const positive=value=>typeof value==='number'&&Number.isFinite(value)&&value>0?value:null;
+ const priceText=value=>value==null?'—':value.toLocaleString('vi-VN',{
+  minimumFractionDigits:2,maximumFractionDigits:2});
+ let complete=0,latest=null;
+ const rows=[...data.stocks].sort((a,b)=>{
+  const left=vn30SortValue(a),right=vn30SortValue(b);
+  if(left==null&&right!=null)return 1;
+  if(right==null&&left!=null)return -1;
+  const compared=left==null?0:typeof left==='string'?
+   left.localeCompare(right):Math.sign(left-right);
+  return compared*vn30Sort.direction||a.symbol.localeCompare(b.symbol);
+ });
+ $('vn30-stocks-rows').innerHTML=rows.map(row=>{
+  const symbol=String(row.symbol||'');
+  if(!/^[A-Z0-9]{1,12}$/.test(symbol))throw Error('Invalid VN30 symbol');
+  const reference=positive(row.reference),last=positive(row.last);
+  const low=positive(row.low),high=positive(row.high);
+  if(reference!=null&&last!=null&&low!=null&&high!=null)complete++;
+  if(Number.isSafeInteger(row.trade_source_ms))latest=Math.max(latest??0,row.trade_source_ms);
+  const change=reference!=null&&last!=null?Number(((last-reference)/reference*100).toFixed(2)):null;
+  const direction=change==null?'':change>0?'up':change<0?'down':'flat';
+  const changeText=change==null?'—':`${change>0?'+':''}${change.toLocaleString('vi-VN',{
+   minimumFractionDigits:2,maximumFractionDigits:2})}%`;
+  return `<tr><td class="symbol"><a href="https://banggia.dnse.com.vn/phan-tich-ky-thuat/${symbol}" target="_blank" rel="noopener noreferrer" title="Xem phân tích kỹ thuật ${symbol} trên DNSE (mở tab mới)">${symbol}</a></td><td>${priceText(last)}</td>`+
+   `<td>${priceText(reference)}</td><td>${priceText(low)}</td><td>${priceText(high)}</td>`+
+   `<td class="${direction}">${changeText}</td><td>${indexClock(row.trade_source_ms)}</td></tr>`;
+ }).join('');
+ set('vn30-stocks-status',`${complete}/30 mã có đủ giá · đơn vị: nghìn đồng/cp · khớp mới nhất ${indexClock(latest)}`);
+}
+function loadVn30Stocks(){
+ if(vn30StockLoading||typeof fetch!=='function')return;
+ vn30StockLoading=true;
+ fetch('/api/vn30-stocks',{cache:'no-store'}).then(response=>{
+  if(!response.ok)throw Error('VN30 stock data unavailable');return response.json();
+ }).then(renderVn30Stocks).catch(()=>{
+  set('vn30-stocks-status','Không tải được giá VN30; sẽ thử lại.');
+ }).finally(()=>{vn30StockLoading=false;});
 }
 function useOhlcv(candle){
- if(!candle||!Number.isFinite(candle.minute_ms)||!Number.isSafeInteger(candle.volume)||
-    candle.volume<0||!Number.isFinite(candle.updated_ms))return;
+ if(!validOhlcv(candle))return;
+ if(mergeOhlcv(candle))renderOhlcvHistory();
  const old=ohlcvLatest;
- if(old&&(candle.minute_ms<old.minute_ms||candle.minute_ms===old.minute_ms&&
-    (Number(!!candle.closed)<Number(!!old.closed)||
-     !!candle.closed===!!old.closed&&candle.updated_ms<old.updated_ms)))return;
+ if(old){
+  if(candle.minute_ms<old.minute_ms)return;
+  if(candle.minute_ms===old.minute_ms){
+   const previous=ohlcvKey(old),incoming=ohlcvKey(candle);
+   if(incoming[0]<previous[0]||incoming[0]===previous[0]&&
+      (incoming[1]<previous[1]||incoming[1]===previous[1]&&incoming[2]<previous[2]))return;
+  }
+ }
  ohlcvLatest=candle;renderOhlcvAlert();
 }
 let basisCurrentDay=null,basisLastFetch=0;
@@ -734,6 +1133,7 @@ function connectIndex(){
 renderIndexBox();
 let paintQueued=false,paintGeneration=0,pendingBook=null,pendingPeaks=false,pendingTrade=false;
 const peakBids=new Map(),peakAsks=new Map(),lastBids=new Map(),lastAsks=new Map();
+const hitBids=new Set(),hitAsks=new Set();
 function recordBook(bids,asks){
  let changed=false;
  for(const [p,q] of bids){
@@ -772,8 +1172,10 @@ function drawBook(bids,asks){
   const b=bidMap.get(p),a=askMap.get(p),peakBid=peakBids.get(p)?.qty,peakAsk=peakAsks.get(p)?.qty;
   const lastBid=lastBids.get(p),lastAsk=lastAsks.get(p);
   const oldBid=b==null&&lastBid!=null,oldAsk=a==null&&lastAsk!=null;
+  const bidMark=hitBids.has(p)&&peakBids.has(p)?'<span class="trade-mark bid-hit" title="Đã có khớp SELL vào BID tại giá này">^</span>':'<span></span>';
+  const askMark=hitAsks.has(p)&&peakAsks.has(p)?'<span class="trade-mark ask-hit" title="Đã có khớp BUY vào ASK tại giá này">▼</span>':'<span></span>';
   const classes=[p===bestBid?'best-bid':'',p===bestAsk?'best-ask':'',p===lastTradePrice?'last-trade':'',b==null&&a==null?'historical':''].filter(Boolean).join(' ');
-  rows.push(`<tr class="${classes}" data-price="${p}"><td class="peak">${peakBid?.toLocaleString('vi-VN')??'—'}</td><td class="bid${oldBid?' last-seen':''}" style="--depth:${(b||0)/liveMax*100}%"${oldBid?` title="BID cuối cùng ghi nhận: ${clock(lastBid.at)}"`:''}>${(b??lastBid?.qty)?.toLocaleString('vi-VN')??'—'}</td><td class="price">${price(p)}</td><td class="ask${oldAsk?' last-seen':''}" style="--depth:${(a||0)/liveMax*100}%"${oldAsk?` title="ASK cuối cùng ghi nhận: ${clock(lastAsk.at)}"`:''}>${(a??lastAsk?.qty)?.toLocaleString('vi-VN')??'—'}</td><td class="peak ask-peak">${peakAsk?.toLocaleString('vi-VN')??'—'}</td></tr>`);
+  rows.push(`<tr class="${classes}" data-price="${p}"><td class="peak">${peakBid?.toLocaleString('vi-VN')??'—'}</td><td class="bid${oldBid?' last-seen':''}" style="--depth:${(b||0)/liveMax*100}%"${oldBid?` title="BID cuối cùng ghi nhận: ${clock(lastBid.at)}"`:''}>${(b??lastBid?.qty)?.toLocaleString('vi-VN')??'—'}</td><td class="price"><span class="price-inner">${bidMark}<span>${price(p)}</span>${askMark}</span></td><td class="ask${oldAsk?' last-seen':''}" style="--depth:${(a||0)/liveMax*100}%"${oldAsk?` title="ASK cuối cùng ghi nhận: ${clock(lastAsk.at)}"`:''}>${(a??lastAsk?.qty)?.toLocaleString('vi-VN')??'—'}</td><td class="peak ask-peak">${peakAsk?.toLocaleString('vi-VN')??'—'}</td></tr>`);
   previous=p;
  }
  const scroll=$('book-wrap').scrollTop;
@@ -820,18 +1222,24 @@ function connect(){
   if(socket!==ws)return;
   const began=performance.now(),browserMs=Date.now();
   let data;try{data=JSON.parse(message.data);}catch{return;}
+  if(Number.isFinite(data.sent_ms))rawServerClock={sent_ms:data.sent_ms,perf_ms:performance.now()};
   if(data.type==='hello'){
    set('status',data.status.toUpperCase()+' · '+data.symbol+' · '+data.day);
    const nextSession=data.symbol+':'+data.day;
    const newSession=sessionKey!==nextSession;
    rawDay=data.day;
    setBasisCurrentDay(data.day);
+   if(newSession){ohlcvCandles.clear();renderOhlcvHistory();}
+   loadOhlcvHistory(data.day,data.symbol);
    paintGeneration++;paintQueued=false;pendingBook=null;pendingPeaks=false;pendingTrade=false;
-   sessionKey=nextSession;peakBids.clear();peakAsks.clear();lastBids.clear();lastAsks.clear();
+   sessionKey=nextSession;peakBids.clear();peakAsks.clear();lastBids.clear();lastAsks.clear();hitBids.clear();hitAsks.clear();
+   loadTradeSpeed(data.day,data.symbol);
    for(const [p,q,at] of data.max_bids||[])peakBids.set(p,{qty:q,at});
    for(const [p,q,at] of data.max_asks||[])peakAsks.set(p,{qty:q,at});
    for(const [p,q,at] of data.last_bids||[])lastBids.set(p,{qty:q,at});
    for(const [p,q,at] of data.last_asks||[])lastAsks.set(p,{qty:q,at});
+   for(const p of data.hit_bids||[])hitBids.add(p);
+   for(const p of data.hit_asks||[])hitAsks.add(p);
    lastTradePrice=data.last_price;lastTradeSourceMs=data.last_price_source_ms??null;
    referencePrice=data.reference_price??null;
    ohlcvLatest=null;useOhlcv(data.ohlcv_latest);if(!ohlcvLatest)renderOhlcvAlert();
@@ -859,6 +1267,9 @@ function connect(){
     useOhlcv(event.candle);
    }else if(event.kind==='trade'){
     trades++;tradeCount++;latestTrade=event;
+    recordTradeSpeed(event);
+    if(event.side==='SELL')hitBids.add(event.price);
+    else if(event.side==='BUY')hitAsks.add(event.price);
     if(event.trade_stats&&event.source_ms>=latestStatsSource){
      latestStats=event.trade_stats;latestStatsSource=event.source_ms;
     }
@@ -888,7 +1299,12 @@ function connect(){
  ws.onerror=()=>ws.close();
 }
 window.addEventListener('beforeunload',()=>{socket?.close();influenceSocket?.close();indexSocket?.close();});
-if(impactDemo){set('status','XEM MẪU · KHÔNG CÓ WS');set('index-status','MỞ QUA SERVER ĐỂ NHẬN VN30');}
-else{connect();connectInfluence();connectIndex();}
+if(impactDemo){
+ set('status','XEM MẪU · KHÔNG CÓ WS');set('index-status','MỞ QUA SERVER ĐỂ NHẬN VN30');
+ set('ohlcv-history-summary','Mở trang qua server LIVE để xem lịch sử nến.');
+ set('ohlcv-history','');
+ set('vn30-stocks-status','Mở trang qua server LIVE để xem giá VN30.');
+}
+else{connect();connectInfluence();connectIndex();loadVn30Stocks();setInterval(loadVn30Stocks,2000);}
 })();
 </script></body></html>
