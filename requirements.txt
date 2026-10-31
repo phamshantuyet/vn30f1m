@@ -1,4 +1,5 @@
 dnse-sdk-openapi==2.4.1
+ssi-sdk==3.3.2
 python-dotenv>=1.0,<2
 websockets>=15,<17
 msgpack>=1,<2
